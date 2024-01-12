@@ -1,0 +1,46 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "msedge",
+      "request": "launch",
+      "name": "wake_web",
+      "url": "http://localhost:5173/",
+      "webRoot": "${workspaceFolder}/frontend"
+    },
+    {
+      "type": "msedge",
+      "request": "attach",
+      "name": "attach_web",
+      "port": 9222,
+      "webRoot": "${workspaceFolder}/frontend_ts"
+    },
+    {
+      "name": "run_wakelan",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/backend",
+      "output": "${workspaceFolder}/bin/run_wakelan"
+    },
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "cppdbg",
+      "request": "launch",
+      "args": [],
+      "stopAtEntry": false,
+      "externalConsole": true,
+      "cwd": "e:/Code/WakeLan/frontend/src",
+      "program": "e:/Code/WakeLan/frontend/src/build/Debug/outDebug",
+      "MIMode": "gdb",
+      "miDebuggerPath": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "debug_web",
+            "type": "shell",
+            "command": "cd ${workspaceRoot}/frontend&npm run dev",
+            "group": "build",
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/d",
+                        "/c"
+                    ]
+                }
+            }
+        },
+        {
+            "label": "build_web",
+            "type": "shell",
+            "command": "cd ${workspaceRoot}/frontend&npm install&npm run build",
+            "group": "build",
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/d",
+                        "/c"
+                    ]
+                }
+            }
+        },
+        {
+            "label": "window_wakelan_debug",
+            "type": "shell",
+            "command": "set GOOS=windows&cd ${workspaceRoot}/backend&go build -o ${workspaceRoot}/bin/wakelan_debug.exe",
+            "group": "build",
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/d",
+                        "/c"
+                    ]
+                }
+            },
+        },
+        {
+            "label": "window_wakelan_release",
+            "type": "shell",
+            "command": "set GOOS=windows&cd ${workspaceRoot}/backend&go build -ldflags \"-s -w\" -o ${workspaceRoot}/bin/wakelan.exe",
+            "group": "build",
+            "options": {
+                "shell": {
+                    "executable": "cmd.exe",
+                    "args": [
+                        "/d",
+                        "/c"
+                    ]
+                }
+            },
+        }
+    ]
+}

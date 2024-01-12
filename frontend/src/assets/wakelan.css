@@ -1,0 +1,19 @@
+#app, .wakelan-layout, .wakelan-main {
+    height: 100%;
+}
+
+.wakelan-main {
+    --el-main-padding: 0 !important;
+} 
+
+.wakelan-header > .el-row {
+    padding-top: 20px;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.disable-text-selection {
+    user-select: none
+}
