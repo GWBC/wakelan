@@ -2,6 +2,7 @@ FROM gwbc/guacd_dev:lunar-amd64 AS build
 
 ENV home=/root
 WORKDIR ${home}
+SHELL ["/bin/bash", "-c"]
 
 RUN pkg=guacamole-server-1.5.4 \
 && tar -zxvf ${pkg}.tar.gz \
@@ -13,7 +14,7 @@ RUN pkg=guacamole-server-1.5.4 \
 && make -j $(nproc) \
 && make install
 
-COPY ../find_dev .
+COPY docker/find_dev .
 RUN chmod +x ./find_dev \
 && export LD_LIBRARY_PATH=${home}/bin/lib \
 && ./find_dev ./bin/sbin/guacd ./guacd_bin \
@@ -23,14 +24,19 @@ RUN chmod +x ./find_dev \
 && ./find_dev ./bin/lib/libguac-client-telnet.so ./guacd_bin \
 && ./find_dev ./bin/lib/libguac-client-kubernetes.so ./guacd_bin 
 
-COPY ../../ ${home}/wakelan
+COPY . ${home}/wakelan
+
+#编译前端
 RUN cd ${home}/wakelan/frontend \
+&& export PATH=$PATH:/usr/bin/node-v21.5.0-linux-x64/bin/ \
 && npm install \
 && sed -i 's/"preserveValueImports"/\/\/"preserveValueImports"/g' node_modules/@vue/tsconfig/tsconfig.json \
 && sed -i 's/"importsNotUsedAsValues"/\/\/"importsNotUsedAsValues"/g' node_modules/@vue/tsconfig/tsconfig.json \
 && npm run build 
 
+#编译后端
 RUN cd ${home}/wakelan \
+&& export PATH=$PATH:/root/go/bin:/usr/bin/go/bin \
 && export CGO_ENABLED=1 \
 && export CGO_LDFLAGS="-O2" \
 && go mod tidy \
