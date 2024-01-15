@@ -1,4 +1,4 @@
-name: build wakelan images
+name: docker build
 
 on:
   workflow_dispatch:
@@ -25,9 +25,9 @@ jobs:
         uses: docker/setup-buildx-action@v2
         
       - name: Build and push
-        working-directory: ./docker/
+        working-directory: .
         run: |
-          docker buildx build --platform linux/amd64 -t gwbc/wakelan:amd64 -f ./amd64/dockerfile . --push          
+          docker buildx build --platform linux/amd64 -t gwbc/wakelan:amd64 -f docker/amd64/dockerfile . --push          
       
 
 
