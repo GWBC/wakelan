@@ -80,7 +80,7 @@ echo "deb ${ubuntu_source} lunar main restricted universe multiverse" > /etc/apt
 COPY --from=build ${home}/guacd_bin ${home}/guacd_bin/
 COPY --from=build /usr/lib/x86_64-linux-gnu/freerdp2 /usr/lib/x86_64-linux-gnu/freerdp2
 COPY --from=build ${home}/wakelan/bin ${home}/wakelan/
-COPY ../simhei.ttf /usr/share/fonts
+COPY docker/simhei.ttf /usr/share/fonts
 
 ENV LD_LIBRARY_PATH=${home}/guacd_bin
 ENV LANG=zh_CN.UTF-8
