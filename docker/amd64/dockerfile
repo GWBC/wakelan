@@ -45,7 +45,7 @@ ENV home=/root
 WORKDIR ${home}
 
 #设置源
-RUN ubuntu_source=http://mirrors.tuna.tsinghua.edu.cn/ubuntu$/ && \
+RUN ubuntu_source=http://mirrors.tuna.tsinghua.edu.cn/ubuntu/ && \
 echo "deb ${ubuntu_source} lunar main restricted universe multiverse" > /etc/apt/sources.list \
 && echo "# deb-src ${ubuntu_source} lunar main main restricted universe multiverse" >> /etc/apt/sources.list \
 && echo "deb ${ubuntu_source} lunar-updates main restricted universe multiverse" >> /etc/apt/sources.list \
