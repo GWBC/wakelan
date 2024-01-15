@@ -1,0 +1,34 @@
+name: build wakelan images
+
+on:
+  workflow_dispatch:
+  #push:
+  #  branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: login dockerhub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
+          
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        
+      - name: Build and push
+        working-directory: ./docker/
+        run: |
+          docker buildx build --platform linux/amd64 -t gwbc/guacd:amd64 -f ./amd64/dockerfile . --push          
+      
+
+
+  

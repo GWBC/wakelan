@@ -1,0 +1,86 @@
+FROM gwbc/guacd_dev:lunar-arm64 AS build
+
+ENV home=/root
+WORKDIR ${home}
+
+RUN pkg=guacamole-server-1.5.4 \
+&& tar -zxvf ${pkg}.tar.gz \
+&& cd ${pkg} \
+&& sed -i 's/container_format = container_format_context->oformat;/container_format = (AVOutputFormat*)container_format_context->oformat;/g' ./src/guacenc/video.c \
+&& sed -i 's/AVCodec\* codec = avcodec_find_encoder_by_name(codec_name);/AVCodec* codec = (AVCodec*)avcodec_find_encoder_by_name(codec_name);/g' ./src/guacenc/video.c \
+&& export LIBS=-lrt \
+&& ./configure --prefix=${home}/bin \
+&& make -j $(nproc) \
+&& make install
+
+COPY ../find_dev .
+RUN chmod +x ./find_dev \
+&& export LD_LIBRARY_PATH=${home}/bin/lib \
+&& ./find_dev ./bin/sbin/guacd ./guacd_bin \
+&& ./find_dev ./bin/lib/libguac-client-rdp.so ./guacd_bin \
+&& ./find_dev ./bin/lib/libguac-client-ssh.so ./guacd_bin \
+&& ./find_dev ./bin/lib/libguac-client-vnc.so ./guacd_bin \
+&& ./find_dev ./bin/lib/libguac-client-telnet.so ./guacd_bin \
+&& ./find_dev ./bin/lib/libguac-client-kubernetes.so ./guacd_bin 
+
+COPY ../../ ${home}/wakelan
+RUN cd ${home}/wakelan/frontend \
+&& npm install \
+&& sed -i 's/"preserveValueImports"/\/\/"preserveValueImports"/g' node_modules/@vue/tsconfig/tsconfig.json \
+&& sed -i 's/"importsNotUsedAsValues"/\/\/"importsNotUsedAsValues"/g' node_modules/@vue/tsconfig/tsconfig.json \
+&& npm run build 
+
+RUN cd ${home}/wakelan \
+&& export CGO_ENABLED=1 \
+&& export CGO_LDFLAGS="-O2" \
+&& go mod tidy \
+&& go build -o bin/wakelan ./backend 
+
+FROM ubuntu:lunar
+
+#取消dpkg-reconfigure交互，使用环境变量来配置
+ARG DEBIAN_FRONTEND=noninteractive
+
+ENV home=/root
+WORKDIR ${home}
+
+#设置源
+RUN arm=-ports&& \
+ubuntu_source=http://mirrors.tuna.tsinghua.edu.cn/ubuntu${arm}/ && \
+echo "deb ${ubuntu_source} lunar main restricted universe multiverse" > /etc/apt/sources.list \
+&& echo "# deb-src ${ubuntu_source} lunar main main restricted universe multiverse" >> /etc/apt/sources.list \
+&& echo "deb ${ubuntu_source} lunar-updates main restricted universe multiverse" >> /etc/apt/sources.list \
+&& echo "# deb-src ${ubuntu_source} lunar-updates main restricted universe multiverse" >> /etc/apt/sources.list \
+&& echo "deb ${ubuntu_source} lunar-backports main restricted universe multiverse" >> /etc/apt/sources.list \
+&& echo "# deb-src ${ubuntu_source} lunar-backports main restricted universe multiverse" >> /etc/apt/sources.list \
+&& echo "deb ${ubuntu_source} lunar-security main restricted universe multiverse" >> /etc/apt/sources.list \
+&& echo "# deb-src ${ubuntu_source} lunar-security main restricted universe multiverse" >> /etc/apt/sources.list \
+&& apt update \
+
+#设置中文
+&& apt -y install language-pack-zh-hans openssl \
+&& echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
+&& echo "zh_CN.UTF-8 UTF-8" >> /etc/locale.gen \
+&& echo "zh_CN.GB2312 GB2312" >> /etc/locale.gen \
+&& echo "zh_CN.GBK GBK" >> /etc/locale.gen \
+&& locale-gen \
+&& echo "LANG=en_US.UTF-8" > /etc/locale.conf \
+&& echo "LANG=\"zh_CN.UTF-8\"" >> /etc/environment \
+&& echo "LANGUAGE=\"zh_CN:zh:en_US:en\"" >> /etc/environment \
+&& mkdir -p /usr/share/fonts \
+&& chmod 755 /usr/share/fonts \
+&& apt clean && apt autoclean -y && apt autoremove -y 
+
+#拷贝编译文件
+COPY --from=build ${home}/guacd_bin ${home}/guacd_bin/
+COPY --from=build /usr/lib/aarch64-linux-gnu/freerdp2 /usr/lib/aarch64-linux-gnu/freerdp2
+COPY --from=build ${home}/wakelan/bin ${home}/wakelan/
+COPY ../simhei.ttf /usr/share/fonts
+
+ENV LD_LIBRARY_PATH=${home}/guacd_bin
+ENV LANG=zh_CN.UTF-8
+ENV LANGUAGE=zh_CN:zh:en_US:en
+
+EXPOSE 4822
+
+CMD ["/root/guacd_bin/guacd", "-b", "0.0.0.0", "-f"]
