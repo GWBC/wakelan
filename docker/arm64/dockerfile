@@ -1,4 +1,4 @@
-FROM gwbc/guacd_dev:lunar-amd64 AS build
+FROM gwbc/guacd_dev:lunar-arm64 AS build
 
 WORKDIR /root
 SHELL ["/bin/bash", "-c"]
@@ -88,7 +88,7 @@ echo "deb ${ubuntu_source} lunar main restricted universe multiverse" > /etc/apt
 
 #拷贝编译文件
 COPY --from=build /root/guacd_bin /root/guacd_bin/
-COPY --from=build /usr/lib/x86_64-linux-gnu/freerdp2 /usr/lib/x86_64-linux-gnu/freerdp2
+COPY --from=build /usr/lib/aarch64-linux-gnu/freerdp2 /usr/lib/aarch64-linux-gnu/freerdp2
 COPY --from=build /root/wakelan/bin /root/wakelan/
 COPY docker/manuf /root/wakelan
 COPY docker/simhei.ttf /usr/share/fonts

@@ -1,0 +1,4 @@
+#/bin/bash
+
+/root/guacd_bin/guacd -b 127.0.0.1 -l $1
+/root/wakelan/wakelan $2
