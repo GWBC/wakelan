@@ -27,7 +27,8 @@ jobs:
       - name: Build and push
         working-directory: .
         run: |
-          docker buildx build --platform linux/amd64 -t gwbc/wakelan:amd64 -f docker/amd64/dockerfile . --push          
+          docker buildx build --platform linux/amd64 -t gwbc/wakelan:amd64 -f docker/amd64/dockerfile . --push   
+          docker buildx build --platform linux/arm64 -t gwbc/wakelan:arm64 -f docker/arm64/dockerfile . --push       
       
 
 

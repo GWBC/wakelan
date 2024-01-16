@@ -164,7 +164,7 @@ func (a *Web) CheckToken() gin.HandlerFunc {
 	}
 }
 
-func (a *Web) Init() {
+func (a *Web) Init(port string) {
 	r := gin.Default()
 
 	//允许跨域
@@ -190,5 +190,5 @@ func (a *Web) Init() {
 	a.SetSystemAPI(r)
 
 	// 启动服务
-	r.Run(":8081")
+	r.Run(port)
 }
