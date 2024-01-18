@@ -1,10 +1,13 @@
 package api
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
+	"wakelan/backend/comm"
 	"wakelan/backend/db"
 	"wakelan/backend/guacd"
 
@@ -14,16 +17,43 @@ import (
 
 type Remote struct {
 	t2s map[int]string
+	key []byte
+	iv  []byte
 }
 
 func (r *Remote) Init() {
 	r.t2s = make(map[int]string)
+
+	r.key = []byte("111111111122222222223333333333aa")
+	r.iv = []byte("aaaaaaaaaabbbbbb")
 
 	//0:rdp 1:vnc 2:ssh 3:telnel
 	r.t2s[0] = "RDP"
 	r.t2s[1] = "VNC"
 	r.t2s[2] = "SSH"
 	r.t2s[3] = "TELNEL"
+}
+
+func (r *Remote) decrypt(decData string) (string, error) {
+	for len(decData)%4 != 0 {
+		decData += "="
+	}
+
+	data, err := base64.URLEncoding.DecodeString(decData)
+	if err != nil {
+		return "", err
+	}
+
+	data, err = comm.AES_CBC_Open(data, r.key, r.iv)
+	if err != nil {
+		return "", err
+	}
+
+	if len(data) == 0 {
+		return "", nil
+	}
+
+	return strings.TrimRight(string(data), "\x00"), nil
 }
 
 func (r *Remote) setting(c *gin.Context) {
@@ -90,6 +120,9 @@ func (r *Remote) remote(c *gin.Context) {
 	}
 
 	info.SetGuacdServer(info.Remote.Type, cfg.GuacdHost, int16(cfg.GuacdPort))
+
+	info.Remote.Pwd, _ = r.decrypt(info.Remote.Pwd)
+	info.Sftp.Pwd, _ = r.decrypt(info.Sftp.Pwd)
 
 	db.DBLog("远程连接", "主机：%s，类型：%v，Guacd：%s:%d",
 		info.Remote.Host,

@@ -1,61 +1,40 @@
-FROM gwbc/guacd_dev:lunar-arm64 AS build
+FROM gwbc/guacd_dev:arm64 AS build
 
-WORKDIR /root
-SHELL ["/bin/bash", "-c"]
+ENV ROOT_DIR=/root
+WORKDIR ${ROOT_DIR}
 
-RUN pkg=guacamole-server-1.5.4 \
-&& tar -zxvf ${pkg}.tar.gz \
-&& cd ${pkg} \
-&& sed -i 's/container_format = container_format_context->oformat;/container_format = (AVOutputFormat*)container_format_context->oformat;/g' ./src/guacenc/video.c \
-&& sed -i 's/AVCodec\* codec = avcodec_find_encoder_by_name(codec_name);/AVCodec* codec = (AVCodec*)avcodec_find_encoder_by_name(codec_name);/g' ./src/guacenc/video.c \
-&& export LIBS=-lrt \
-&& ./configure --prefix=/root/bin \
-&& make -j $(nproc) \
-&& make install
+RUN mkdir -p wakelan/backend \
+&& mkdir -p wakelan/frontend
 
-COPY docker/find_dev .
-RUN chmod +x ./find_dev \
-&& export LD_LIBRARY_PATH=/root/bin/lib \
-&& ./find_dev ./bin/sbin/guacd ./guacd_bin \
-&& ./find_dev ./bin/lib/libguac-client-rdp.so ./guacd_bin \
-&& ./find_dev ./bin/lib/libguac-client-ssh.so ./guacd_bin \
-&& ./find_dev ./bin/lib/libguac-client-vnc.so ./guacd_bin \
-&& ./find_dev ./bin/lib/libguac-client-telnet.so ./guacd_bin \
-&& ./find_dev ./bin/lib/libguac-client-kubernetes.so ./guacd_bin 
-
-RUN mkdir -p /root/wakelan/backend \
-&& mkdir -p /root/wakelan/frontend
-
-COPY go.mod /root/wakelan
-COPY go.sum /root/wakelan
-COPY backend /root/wakelan/backend
-COPY frontend /root/wakelan/frontend
+COPY go.mod wakelan
+COPY go.sum wakelan
+COPY backend wakelan/backend
+COPY frontend wakelan/frontend
 
 #编译前端
-RUN cd /root/wakelan/frontend \
-&& export PATH=$PATH:/usr/bin/node/bin/ \
+RUN cd wakelan/frontend \
 && npm install \
 && sed -i 's/"preserveValueImports"/\/\/"preserveValueImports"/g' node_modules/@vue/tsconfig/tsconfig.json \
 && sed -i 's/"importsNotUsedAsValues"/\/\/"importsNotUsedAsValues"/g' node_modules/@vue/tsconfig/tsconfig.json \
 && npm run build 
 
 #编译后端
-RUN cd /root/wakelan \
-&& export PATH=$PATH:/root/go/bin:/usr/bin/go/bin \
+RUN cd wakelan \
 && export CGO_ENABLED=1 \
 && export CGO_LDFLAGS="-O2" \
 && go mod tidy \
-&& go build -o bin/wakelan ./backend 
+&& go build -ldflags "-s -w" -o bin/wakelan ./backend 
 
-RUN cd /root \
-&& ./find_dev wakelan/bin/wakelan wakelan/bin 
+RUN cp -rf ./wakelan/bin ./wakelan_bin \
+&& ./find_dev ./wakelan/bin/wakelan ./wakelan_bin 
 
 FROM ubuntu:lunar
 
 #取消dpkg-reconfigure交互，使用环境变量来配置
 ARG DEBIAN_FRONTEND=noninteractive
 
-WORKDIR /root
+ENV ROOT_DIR=/root
+WORKDIR ${ROOT_DIR}
 
 ENV WAKE_PORT=8081
 ENV GUACD_PORT=4822
@@ -87,18 +66,19 @@ echo "deb ${ubuntu_source} lunar main restricted universe multiverse" > /etc/apt
 && apt clean && apt autoclean -y && apt autoremove -y 
 
 #拷贝编译文件
-COPY --from=build /root/guacd_bin /root/guacd_bin/
+COPY --from=build ${ROOT_DIR}/guacd_bin guacd_bin/
+COPY --from=build ${ROOT_DIR}/wakelan_bin wakelan/
 COPY --from=build /usr/lib/aarch64-linux-gnu/freerdp2 /usr/lib/aarch64-linux-gnu/freerdp2
-COPY --from=build /root/wakelan/bin /root/wakelan/
-COPY docker/manuf /root/wakelan
-COPY docker/simhei.ttf /usr/share/fonts
-COPY docker/run /root/run
-RUN chmod 777 /root/run
+COPY --from=build /usr/share/fonts/simhei.ttf /usr/share/fonts
+COPY docker/manuf wakelan
+COPY docker/run run
+RUN chmod 777 run
 
-ENV LD_LIBRARY_PATH=/root/guacd_bin:/root/wakelan
+ENV LD_LIBRARY_PATH=${ROOT_DIR}/guacd_bin:${ROOT_DIR}/wakelan
 ENV LANG=zh_CN.UTF-8
 ENV LANGUAGE=zh_CN:zh:en_US:en
 
+VOLUME ${ROOT_DIR}/wakelan/data
 EXPOSE ${WAKE_PORT} ${GUACD_PORT}
 
-CMD ["/bin/bash", "-c", "/root/run ${GUACD_PORT} ${WAKE_PORT}"]
+CMD ["/bin/bash", "-c", "${ROOT_DIR}/run ${GUACD_PORT} ${WAKE_PORT}"]

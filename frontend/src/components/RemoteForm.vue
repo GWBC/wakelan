@@ -70,6 +70,7 @@
 
 <script setup lang="ts">
 import { reactive } from 'vue'
+import { AESEncrypt } from '@/lib/comm'
 import { RemoteType } from '@/lib/guacd/client'
 import type { RemoteConfigInfo, RemoteInfo, SFTPInfo } from '@/lib/guacd/client';
 
@@ -90,6 +91,9 @@ const data = reactive<RemoteConfigInfo>({
 
 const t2p = [3389, 5900, 22, 23]
 const t2u = ['Administrator', 'Administrator', 'root', 'Administrator']
+
+const iv = 'aaaaaaaaaabbbbbb'
+const key = '111111111122222222223333333333aa'
 
 function onOpen() {
     if (props.data != null) {
@@ -158,6 +162,8 @@ function onSelectChange() {
 
 function onSubmit() {
     data.id = data.remote.host + data.remote.port
+    data.remote.pwd = AESEncrypt(data.remote.pwd, key, iv)
+    data.sftp.pwd = AESEncrypt(data.sftp.pwd, key, iv)
     emit('submit', props.data, data)
 }
 

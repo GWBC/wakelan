@@ -1,5 +1,6 @@
 import { ElMessage } from 'element-plus'
 import router from '@/router'
+import CryptoJS, { format } from 'crypto-js'
 
 interface FetchResponse<T> {
     (info: T): void
@@ -99,4 +100,30 @@ export function Now2Str(): string {
 //深拷贝对象
 export function DeepCopy(obj: any) {
     return JSON.parse(JSON.stringify(obj))
+}
+
+export function AESEncrypt(msg: string, key: string, iv: string): string {
+    let data = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(msg),
+        CryptoJS.enc.Utf8.parse(key), {
+        iv: CryptoJS.enc.Utf8.parse(iv),
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.ZeroPadding
+    })
+
+    return data.ciphertext.toString(CryptoJS.enc.Base64url)
+}
+
+export function AESDecrypt(msg: string, key: string, iv: string): string {
+    let data = CryptoJS.lib.CipherParams.create({
+        ciphertext: CryptoJS.enc.Base64url.parse(msg)
+    });
+
+    let res = CryptoJS.AES.decrypt(data,
+        CryptoJS.enc.Utf8.parse(key), {
+        iv: CryptoJS.enc.Utf8.parse(iv),
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.ZeroPadding
+    })
+
+    return res.toString(CryptoJS.enc.Utf8)
 }

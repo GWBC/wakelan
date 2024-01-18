@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"sync"
 	"wakelan/backend/comm"
@@ -67,7 +68,10 @@ func (d *DBOper) initData(db *gorm.DB) {
 }
 
 func (d *DBOper) Init() error {
-	db, err := gorm.Open(sqlite.Open(filepath.Join(comm.Pwd(), "data.db")), &gorm.Config{})
+	dbPath := filepath.Join(comm.Pwd(), "data/")
+	os.MkdirAll(dbPath, 0755)
+
+	db, err := gorm.Open(sqlite.Open(filepath.Join(dbPath, "data.db")), &gorm.Config{})
 	if err != nil {
 		return err
 	}
