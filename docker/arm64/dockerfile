@@ -1,10 +1,12 @@
+#docker run -d --privileged --name wakelan --net host -e WAKE_PORT=3456 -v/root/wakelan/data:/root/wakelan/data gwbc/wakelan:arm64
+
 FROM gwbc/guacd_dev:arm64 AS build
 
 ENV ROOT_DIR=/root
 WORKDIR ${ROOT_DIR}
 
 RUN mkdir -p wakelan/backend \
-&& mkdir -p wakelan/frontend
+    && mkdir -p wakelan/frontend
 
 COPY go.mod wakelan
 COPY go.sum wakelan
@@ -13,20 +15,20 @@ COPY frontend wakelan/frontend
 
 #编译前端
 RUN cd wakelan/frontend \
-&& npm install \
-&& sed -i 's/"preserveValueImports"/\/\/"preserveValueImports"/g' node_modules/@vue/tsconfig/tsconfig.json \
-&& sed -i 's/"importsNotUsedAsValues"/\/\/"importsNotUsedAsValues"/g' node_modules/@vue/tsconfig/tsconfig.json \
-&& npm run build 
+    && npm install \
+    && sed -i 's/"preserveValueImports"/\/\/"preserveValueImports"/g' node_modules/@vue/tsconfig/tsconfig.json \
+    && sed -i 's/"importsNotUsedAsValues"/\/\/"importsNotUsedAsValues"/g' node_modules/@vue/tsconfig/tsconfig.json \
+    && npm run build 
 
 #编译后端
 RUN cd wakelan \
-&& export CGO_ENABLED=1 \
-&& export CGO_LDFLAGS="-O2" \
-&& go mod tidy \
-&& go build -ldflags "-s -w" -o bin/wakelan ./backend 
+    && export CGO_ENABLED=1 \
+    && export CGO_LDFLAGS="-O2" \
+    && go mod tidy \
+    && go build -ldflags "-s -w" -o bin/wakelan ./backend 
 
 RUN cp -rf ./wakelan/bin ./wakelan_bin \
-&& ./find_dev ./wakelan/bin/wakelan ./wakelan_bin 
+    && ./find_dev ./wakelan/bin/wakelan ./wakelan_bin 
 
 FROM ubuntu:lunar
 
@@ -41,29 +43,29 @@ ENV GUACD_PORT=4822
 
 #设置源
 RUN ubuntu_source=http://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ && \
-echo "deb ${ubuntu_source} lunar main restricted universe multiverse" > /etc/apt/sources.list \
-&& echo "# deb-src ${ubuntu_source} lunar main main restricted universe multiverse" >> /etc/apt/sources.list \
-&& echo "deb ${ubuntu_source} lunar-updates main restricted universe multiverse" >> /etc/apt/sources.list \
-&& echo "# deb-src ${ubuntu_source} lunar-updates main restricted universe multiverse" >> /etc/apt/sources.list \
-&& echo "deb ${ubuntu_source} lunar-backports main restricted universe multiverse" >> /etc/apt/sources.list \
-&& echo "# deb-src ${ubuntu_source} lunar-backports main restricted universe multiverse" >> /etc/apt/sources.list \
-&& echo "deb ${ubuntu_source} lunar-security main restricted universe multiverse" >> /etc/apt/sources.list \
-&& echo "# deb-src ${ubuntu_source} lunar-security main restricted universe multiverse" >> /etc/apt/sources.list \
-&& apt update \
+    echo "deb ${ubuntu_source} lunar main restricted universe multiverse" > /etc/apt/sources.list \
+    && echo "# deb-src ${ubuntu_source} lunar main main restricted universe multiverse" >> /etc/apt/sources.list \
+    && echo "deb ${ubuntu_source} lunar-updates main restricted universe multiverse" >> /etc/apt/sources.list \
+    && echo "# deb-src ${ubuntu_source} lunar-updates main restricted universe multiverse" >> /etc/apt/sources.list \
+    && echo "deb ${ubuntu_source} lunar-backports main restricted universe multiverse" >> /etc/apt/sources.list \
+    && echo "# deb-src ${ubuntu_source} lunar-backports main restricted universe multiverse" >> /etc/apt/sources.list \
+    && echo "deb ${ubuntu_source} lunar-security main restricted universe multiverse" >> /etc/apt/sources.list \
+    && echo "# deb-src ${ubuntu_source} lunar-security main restricted universe multiverse" >> /etc/apt/sources.list \
+    && apt update \
 
-#设置中文
-&& apt -y install language-pack-zh-hans openssl \
-&& echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
-&& echo "zh_CN.UTF-8 UTF-8" >> /etc/locale.gen \
-&& echo "zh_CN.GB2312 GB2312" >> /etc/locale.gen \
-&& echo "zh_CN.GBK GBK" >> /etc/locale.gen \
-&& locale-gen \
-&& echo "LANG=en_US.UTF-8" > /etc/locale.conf \
-&& echo "LANG=\"zh_CN.UTF-8\"" >> /etc/environment \
-&& echo "LANGUAGE=\"zh_CN:zh:en_US:en\"" >> /etc/environment \
-&& mkdir -p /usr/share/fonts \
-&& chmod 755 /usr/share/fonts \
-&& apt clean && apt autoclean -y && apt autoremove -y 
+    #设置中文
+    && apt -y install language-pack-zh-hans openssl \
+    && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
+    && echo "zh_CN.UTF-8 UTF-8" >> /etc/locale.gen \
+    && echo "zh_CN.GB2312 GB2312" >> /etc/locale.gen \
+    && echo "zh_CN.GBK GBK" >> /etc/locale.gen \
+    && locale-gen \
+    && echo "LANG=en_US.UTF-8" > /etc/locale.conf \
+    && echo "LANG=\"zh_CN.UTF-8\"" >> /etc/environment \
+    && echo "LANGUAGE=\"zh_CN:zh:en_US:en\"" >> /etc/environment \
+    && mkdir -p /usr/share/fonts \
+    && chmod 755 /usr/share/fonts \
+    && apt clean && apt autoclean -y && apt autoremove -y 
 
 #拷贝编译文件
 COPY --from=build ${ROOT_DIR}/guacd_bin guacd_bin/
@@ -78,7 +80,7 @@ ENV LD_LIBRARY_PATH=${ROOT_DIR}/guacd_bin:${ROOT_DIR}/wakelan
 ENV LANG=zh_CN.UTF-8
 ENV LANGUAGE=zh_CN:zh:en_US:en
 
-VOLUME ${ROOT_DIR}/wakelan/data
+VOLUME [ "${ROOT_DIR}/wakelan/data" ]
 EXPOSE ${WAKE_PORT} ${GUACD_PORT}
 
 CMD ["/bin/bash", "-c", "${ROOT_DIR}/run ${GUACD_PORT} ${WAKE_PORT}"]
