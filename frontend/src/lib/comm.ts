@@ -1,6 +1,6 @@
 import { ElMessage } from 'element-plus'
 import router from '@/router'
-import CryptoJS, { format } from 'crypto-js'
+import CryptoJS from 'crypto-js'
 
 interface FetchResponse<T> {
     (info: T): void
@@ -30,7 +30,11 @@ export async function Fetch<T>(url: string, postData: any, resCallback: FetchRes
             throw response.statusText
         }
 
-        return response.json()
+        try {
+            return response.json()
+        } catch (errors) {
+            throw errors
+        }
     }).then(data => {
         if (!data) {
             throw new Error("unknown error")

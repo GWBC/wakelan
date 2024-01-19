@@ -15,13 +15,22 @@
             </el-header>
             <el-main>
                 <el-table height="200" :data="datas" empty-text=" " @row-dblclick="onDBClick">
-                    <el-table-column label="主机" prop="remote.host"></el-table-column>
-                    <el-table-column label="端口" prop="remote.port"></el-table-column>
                     <el-table-column label="协议" prop="remote.type">
                         <template #default="scope">
-                            {{ p2s[scope.row.remote.type] }}
+                            <el-tag v-if="scope.row.remote.type == RemoteType.RDP"
+                                effect="dark">{{ p2s[scope.row.remote.type] }}</el-tag>
+                            <el-tag v-if="scope.row.remote.type == RemoteType.VNC" effect="dark"
+                                type="info">{{ p2s[scope.row.remote.type] }}</el-tag>
+                            <el-tag v-if="scope.row.remote.type == RemoteType.SSH" effect="dark"
+                                type="warning">{{ p2s[scope.row.remote.type] }}</el-tag>
+                            <el-tag v-if="scope.row.remote.type == RemoteType.TELNET" effect="dark"
+                                type="danger">{{ p2s[scope.row.remote.type] }}</el-tag>
+                            <el-tag v-if="scope.row.remote.type == RemoteType.HTTP" effect="dark"
+                                type="success">{{ p2s[scope.row.remote.type] }}</el-tag>
                         </template>
                     </el-table-column>
+                    <el-table-column label="主机" prop="remote.host"></el-table-column>
+                    <el-table-column label="端口" prop="remote.port"></el-table-column>
                     <el-table-column v-if="props.edit" width="180" fixed="right" label="操作">
                         <template #default="scope">
                             <el-button size="small" type="danger" @click="delConfig(scope.row)">删除</el-button>
@@ -36,6 +45,7 @@
 <script setup lang="ts">
 import { DeepCopy, Fetch } from '@/lib/comm'
 import RemoteForm from './RemoteForm.vue'
+import { RemoteType } from '@/lib/guacd/client'
 import type { RemoteConfigInfo } from '@/lib/guacd/client';
 import { ref, reactive } from 'vue'
 
@@ -55,7 +65,7 @@ const cfgDlgData = ref<RemoteConfigInfo | null>({} as RemoteConfigInfo)
 
 const datas = reactive<RemoteConfigInfo[]>([])
 
-let p2s = ['RDP', 'VNC', 'SSH', 'TELNET']
+let p2s = ['RDP', 'VNC', 'SSH', 'TELNET', 'HTTP']
 
 function findDatas(info: RemoteConfigInfo) {
     let i = 0

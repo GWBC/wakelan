@@ -89,7 +89,8 @@ import Navigation from './Navigation.vue'
 import RemoteConfig from '@/components/RemoteConfig.vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
-import type { RemoteConfigInfo } from '@/lib/guacd/client';
+import { RemoteType } from '@/lib/guacd/client'
+import type { RemoteConfigInfo } from '@/lib/guacd/client'
 
 interface StarInfo {
   ip: string
@@ -334,7 +335,8 @@ function pingAllPC() {
 }
 
 function onOpenRemote(pcInfo: PCInfo) {
-  let data = null
+  let data: RemoteConfigInfo[] = []
+
   try {
     data = JSON.parse(pcInfo.remote_info.remote)
   } catch (error) {
@@ -342,11 +344,22 @@ function onOpenRemote(pcInfo: PCInfo) {
   }
 
   if (data.length == 0) {
-    window.open(`http://${pcInfo.ip}`, '_blank');
     return
   }
 
   if (data.length == 1) {
+    if (data[0].remote.type == RemoteType.HTTP) {
+      let remote = data[0].remote
+      let protocol = 'http'
+
+      if (remote.https) {
+        protocol = 'https'
+      }
+
+      window.open(`${protocol}://${remote.host}:${remote.port}/${remote.path}`, '_blank')
+      return
+    }
+
     remoteShow.value = true
     remoteConnInfo.value = data[0]
   } else {
@@ -397,6 +410,18 @@ function onRemoteConfig(edit: boolean, host: string, info: RemoteConfigInfo[]) {
       }
     }
   } else {
+    if (info[0].remote.type == RemoteType.HTTP) {
+      let remote = info[0].remote
+      let protocol = 'http'
+
+      if (remote.https) {
+        protocol = 'https'
+      }
+
+      window.open(`${protocol}://${remote.host}:${remote.port}/${remote.path}`, '_blank')
+      return
+    }
+
     remoteShow.value = true
     remoteConnInfo.value = info[0]
   }

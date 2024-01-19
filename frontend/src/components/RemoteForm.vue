@@ -13,21 +13,28 @@
                             </el-form-item>
                             <el-form-item label="协议">
                                 <el-select v-model="data.remote.type" placeholder="选择协议" @change="onSelectChange">
-                                    <el-option label="RDP" :value=0 />
-                                    <el-option label="VNC" :value=1 />
-                                    <el-option label="SSH" :value=2 />
-                                    <el-option label="TELNET" :value=3 />
+                                    <el-option label="RDP" :value=RemoteType.RDP />
+                                    <el-option label="VNC" :value=RemoteType.VNC />
+                                    <el-option label="SSH" :value=RemoteType.SSH />
+                                    <!-- <el-option label="TELNET" :value=RemoteType.TELNET /> -->
+                                    <el-option label="HTTP" :value=RemoteType.HTTP />
                                 </el-select>
                             </el-form-item>
-                            <el-form-item label="用户">
+                            <el-form-item v-if="data.remote.type != RemoteType.HTTP" label="用户">
                                 <el-input v-model="data.remote.user" />
                             </el-form-item>
-                            <el-form-item label="密码">
+                            <el-form-item v-if="data.remote.type != RemoteType.HTTP" label="密码">
                                 <el-input type="password" placeholder="请输入密码" v-model="data.remote.pwd" />
+                            </el-form-item>
+                            <el-form-item v-if="data.remote.type == RemoteType.HTTP" label="路径">
+                                <el-input v-model="data.remote.path" />
+                            </el-form-item>
+                            <el-form-item v-if="data.remote.type == RemoteType.HTTP" label="HTTPS">
+                                <el-switch @change="httpSwitch" v-model="data.remote.https" />
                             </el-form-item>
                         </el-form>
                     </el-tab-pane>
-                    <el-tab-pane label=" SFTP服务">
+                    <el-tab-pane v-if="data.remote.type != RemoteType.HTTP" label=" SFTP服务">
                         <el-form :model="data" label-width="auto">
                             <el-form-item label="启动">
                                 <el-switch v-model="data.sftp.enable" />
@@ -89,8 +96,8 @@ const data = reactive<RemoteConfigInfo>({
     sftp: {} as SFTPInfo
 })
 
-const t2p = [3389, 5900, 22, 23]
-const t2u = ['Administrator', 'Administrator', 'root', 'Administrator']
+const t2p = [3389, 5900, 22, 23, 80]
+const t2u = ['Administrator', 'Administrator', 'root', 'Administrator', '']
 
 const iv = 'aaaaaaaaaabbbbbb'
 const key = '111111111122222222223333333333aa'
@@ -112,6 +119,9 @@ function onOpen() {
         data.sftp.port = props.data.sftp.port
         data.sftp.user = props.data.sftp.user
         data.sftp.pwd = props.data.sftp.pwd
+
+        data.remote.path = props.data.remote.path       //非远程需要
+        data.remote.https = props.data.remote.https     //非远程需要
     } else {
         data.remote.host = props.host
         data.remote.type = RemoteType.RDP
@@ -128,6 +138,9 @@ function onOpen() {
         data.sftp.port = 22
         data.sftp.user = 'root'
         data.sftp.pwd = ''
+
+        data.remote.path = ''        //非远程需要
+        data.remote.https = false     //非远程需要
     }
 }
 
@@ -147,6 +160,9 @@ function onClose() {
     data.sftp.port = 22
     data.sftp.user = 'root'
     data.sftp.pwd = ''
+
+    data.remote.path = ''        //非远程需要
+    data.remote.https = false     //非远程需要
 }
 
 function onSelectChange() {
@@ -165,6 +181,14 @@ function onSubmit() {
     data.remote.pwd = AESEncrypt(data.remote.pwd, key, iv)
     data.sftp.pwd = AESEncrypt(data.sftp.pwd, key, iv)
     emit('submit', props.data, data)
+}
+
+function httpSwitch(){
+    if(data.remote.https && data.remote.port == 80){
+        data.remote.port = 443
+    }else if(!data.remote.https && data.remote.port == 443){
+        data.remote.port = 80
+    }
 }
 
 </script>

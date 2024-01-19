@@ -29,6 +29,11 @@ const router = createRouter({
       name: 'login',
       component: () => import('../views/Login.vue')
     },
+    {
+      path: '/filetransfer',
+      name: 'filetransfer',
+      component: () => import('../views/FileTransfer.vue')
+    }
   ]
 })
 

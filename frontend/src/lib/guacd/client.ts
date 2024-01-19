@@ -17,7 +17,8 @@ export enum RemoteType {
     RDP,
     VNC,
     SSH,
-    TELNET
+    TELNET,
+    HTTP
 }
 
 export interface RemoteInfo {
@@ -28,6 +29,8 @@ export interface RemoteInfo {
     type: RemoteType
     width: string
     height: string
+    path: string        //非远程使用
+    https: boolean      //非远程使用
 }
 
 export interface SFTPInfo {
