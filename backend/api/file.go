@@ -100,6 +100,7 @@ func (f *FileTransfer) GetFileMeta(c *gin.Context) {
 func (f *FileTransfer) Upload(c *gin.Context) {
 	meta := db.FileMeta{}
 	meta.MD5 = c.Request.FormValue("md5")
+	meta.Name = c.Request.FormValue("name")
 	meta.Size, _ = strconv.Atoi(c.Request.FormValue("size"))
 	meta.Index, _ = strconv.Atoi(c.Request.FormValue("index"))
 	meta.CreatedAt = time.Now()
@@ -129,8 +130,6 @@ func (f *FileTransfer) Upload(c *gin.Context) {
 		if err != nil {
 			goto UploadErr
 		}
-
-		meta.Name = file.Filename
 
 		src, err = file.Open()
 		if err != nil {

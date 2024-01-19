@@ -10,10 +10,6 @@
     padding-top: 20px;
 }
 
-.full-width {
-    width: 100%;
-}
-
 .disable-text-selection {
     user-select: none
 }

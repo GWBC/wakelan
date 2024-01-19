@@ -1,6 +1,7 @@
 package db
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -46,17 +47,42 @@ type GlobalInfo struct {
 
 type Log struct {
 	gorm.Model
-	Cmd  string `gorm:"column:cmd"  json:"cmd"`
-	Msg  string `gorm:"column:msg"  json:"msg"`
-	Time string `gorm:"-"  json:"time"`
+	Cmd string `gorm:"column:cmd"  json:"cmd"`
+	Msg string `gorm:"column:msg"  json:"msg"`
+}
+
+// 处理json编码
+func (l *Log) MarshalJSON() ([]byte, error) {
+	datas := struct {
+		Log
+		Time string `json:"time"`
+	}{
+		*l,
+		l.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	return json.Marshal(datas)
 }
 
 type FileMeta struct {
-	MD5       string    `gorm:"column:md5;primary_key" json:"md5"`
-	Name      string    `gorm:"column:name" json:"name"`
-	Size      int       `gorm:"column:size" json:"size"`
-	Index     int       `gorm:"column:index" json:"index"`
-	CreatedAt time.Time `json:"time"`
+	MD5       string `gorm:"column:md5;primary_key" json:"md5"`
+	Name      string `gorm:"column:name" json:"name"`
+	Size      int    `gorm:"column:size" json:"size"`
+	Index     int    `gorm:"column:index" json:"index"`
+	CreatedAt time.Time
+}
+
+// 处理json编码
+func (m *FileMeta) MarshalJSON() ([]byte, error) {
+	datas := struct {
+		FileMeta
+		Time string `json:"time"`
+	}{
+		*m,
+		m.CreatedAt.Format("2006-01-02 15:04:05"),
+	}
+
+	return json.Marshal(datas)
 }
 
 type DBOper struct {

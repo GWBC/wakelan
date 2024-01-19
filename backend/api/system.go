@@ -76,10 +76,6 @@ func (r *System) GetLog(c *gin.Context) {
 
 	dbObj.Order("updated_at desc").Limit(pageSize).Offset((page - 1) * pageSize).Find(&infos)
 
-	for i := 0; i < len(infos); i++ {
-		infos[i].Time = infos[i].CreatedAt.Format("2006-01-02 15:04:05")
-	}
-
 	c.JSON(200, gin.H{
 		"err":   "",
 		"infos": infos,
