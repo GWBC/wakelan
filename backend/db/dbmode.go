@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 	"wakelan/backend/comm"
 
 	"gorm.io/driver/sqlite"
@@ -50,6 +51,14 @@ type Log struct {
 	Time string `gorm:"-"  json:"time"`
 }
 
+type FileMeta struct {
+	MD5       string    `gorm:"column:md5;primary_key" json:"md5"`
+	Name      string    `gorm:"column:name" json:"name"`
+	Size      int       `gorm:"column:size" json:"size"`
+	Index     int       `gorm:"column:index" json:"index"`
+	CreatedAt time.Time `json:"time"`
+}
+
 type DBOper struct {
 	db *gorm.DB
 }
@@ -78,7 +87,7 @@ func (d *DBOper) Init() error {
 
 	d.db = db
 
-	db.AutoMigrate(&MacInfo{}, &GlobalInfo{}, &StarInfo{}, &RemoteInfo{}, &Log{})
+	db.AutoMigrate(&MacInfo{}, &GlobalInfo{}, &StarInfo{}, &RemoteInfo{}, &Log{}, &FileMeta{})
 
 	d.initData(db)
 

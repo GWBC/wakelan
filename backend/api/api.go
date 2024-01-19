@@ -16,43 +16,53 @@ type Web struct {
 }
 
 func (a *Web) SetWakeAPI(r *gin.Engine) {
-	wakeAPI := WakeApi{}
-	wakeAPI.Init()
+	api := WakeApi{}
+	api.Init()
 
-	wake := r.Group("/api/wake")
-	wake.GET("/getip", wakeAPI.getGlobalIP)
-	wake.GET("/getinterfaces", wakeAPI.getInterfaces)
-	wake.GET("/probenetwork", wakeAPI.probeNetwork)
-	wake.GET("/cleannetworklist", wakeAPI.cleanNetworklist)
-	wake.GET("/getnetworklist", wakeAPI.getNetworklist)
-	wake.GET("/wakeLan", wakeAPI.wakeLan)
-	wake.GET("/operstar", wakeAPI.operStar)
-	wake.GET("/opencard", wakeAPI.openCard)
-	wake.GET("/getselectnetcard", wakeAPI.getSelectNetCard)
-	wake.GET("/pingpc", wakeAPI.pingPC)
+	group := r.Group("/api/wake")
+	group.GET("/getip", api.getGlobalIP)
+	group.GET("/getinterfaces", api.getInterfaces)
+	group.GET("/probenetwork", api.probeNetwork)
+	group.GET("/cleannetworklist", api.cleanNetworklist)
+	group.GET("/getnetworklist", api.getNetworklist)
+	group.GET("/wakeLan", api.wakeLan)
+	group.GET("/operstar", api.operStar)
+	group.GET("/opencard", api.openCard)
+	group.GET("/getselectnetcard", api.getSelectNetCard)
+	group.GET("/pingpc", api.pingPC)
 }
 
 func (a *Web) SetRemoteAPI(r *gin.Engine) {
-	remoteAPI := &Remote{}
-	remoteAPI.Init()
+	api := &Remote{}
+	api.Init()
 
-	remote := r.Group("/api/remote")
-	remote.GET("/conn", remoteAPI.remote)
-	remote.POST("/setting", remoteAPI.setting)
+	group := r.Group("/api/remote")
+	group.GET("/conn", api.remote)
+	group.POST("/setting", api.setting)
 }
 
 func (a *Web) SetSystemAPI(r *gin.Engine) {
-	systemAPI := &System{}
-	systemAPI.Init()
+	api := &System{}
+	api.Init()
 
-	system := r.Group("/api/system")
-	system.GET("/logsize", systemAPI.GetLogSize)
-	system.GET("/log", systemAPI.GetLog)
-	system.GET("/configinfo", systemAPI.GetConfigInfo)
-	system.GET("/setconfig", systemAPI.SetConfig)
-	system.GET("/genpwd", systemAPI.GenDynamicPassword)
+	group := r.Group("/api/system")
+	group.GET("/logsize", api.GetLogSize)
+	group.GET("/log", api.GetLog)
+	group.GET("/configinfo", api.GetConfigInfo)
+	group.GET("/setconfig", api.SetConfig)
+	group.GET("/genpwd", api.GenDynamicPassword)
 }
 
+func (a *Web) SetFileAPI(r *gin.Engine) {
+	api := &FileTransfer{}
+	api.Init()
+
+	group := r.Group("/api/file")
+	group.GET("/meta", api.GetFileMeta)
+	group.POST("/upload", api.Upload)
+}
+
+// ///////////////////////////////////////////////////////////////////
 func (a *Web) Login(r *gin.Engine) {
 	api := r.Group("/api")
 	api.GET("/login", func(c *gin.Context) {
@@ -188,6 +198,9 @@ func (a *Web) Init(port string) {
 
 	//设置系统接口
 	a.SetSystemAPI(r)
+
+	//设置文件传输接口
+	a.SetFileAPI(r)
 
 	// 启动服务
 	r.Run(port)

@@ -23,10 +23,14 @@ func (p *PushIP) Start(second int) error {
 
 			if len(p.ip) != 0 {
 				if !strings.EqualFold(p.ip, info.IP) {
+					msg := fmt.Sprintf("当前地址：%s", p.ip)
+
+					if len(info.AYFFToken) == 0 && len(info.WXPusherToken) == 0 {
+						continue
+					}
+
 					info.IP = p.ip
 					dbObj.Select("ip").Save(info)
-
-					msg := fmt.Sprintf("当前地址：%s", p.ip)
 
 					if len(info.AYFFToken) != 0 {
 						go comm.AYFFPushMsg(msg, info.AYFFToken)

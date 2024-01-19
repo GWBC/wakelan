@@ -8,7 +8,7 @@ import (
 
 func main() {
 	network.NetProtoObj().Init()
-	network.PushipOBJ().Start(60)
+	network.PushipOBJ().Start(3 * 60)
 
 	web := api.Web{}
 
