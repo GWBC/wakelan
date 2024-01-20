@@ -58,7 +58,12 @@ export async function Fetch<T>(url: string, postData: any, resCallback: FetchRes
 //下载文件
 export function DownloadFile(data: Blob, filename: string) {
     const url = URL.createObjectURL(data);
+    DownloadFileFromURL(url, filename)
+    URL.revokeObjectURL(url);
+}
 
+//下载文件
+export function DownloadFileFromURL(url: string, filename: string) {
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
@@ -66,8 +71,6 @@ export function DownloadFile(data: Blob, filename: string) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    URL.revokeObjectURL(url);
 }
 
 //全屏
@@ -130,4 +133,8 @@ export function AESDecrypt(msg: string, key: string, iv: string): string {
     })
 
     return res.toString(CryptoJS.enc.Utf8)
+}
+
+export function DeleteCookie(key: string) {
+    document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api;`
 }

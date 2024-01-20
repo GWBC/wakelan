@@ -46,7 +46,7 @@
         </el-table-column>
         <el-table-column prop="ip" label="地址" width="180" sortable="custom" />
         <el-table-column prop="mac" label="硬件地址" width="180" />
-        <el-table-column prop="manuf" label="描述" width="400" />
+        <el-table-column prop="manuf" label="描述" width="300" />
         <el-table-column width="60">
           <template #default="scope">
             <el-icon v-show="scope.row.online">

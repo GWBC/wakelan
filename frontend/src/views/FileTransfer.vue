@@ -26,7 +26,7 @@
                         <template #default="scope">
                             <el-tag class="tag" v-if="scope.row.index == scope.row.size" type="success"
                                 effect="dark">100%</el-tag>
-                            <el-tag class="tag" v-else type="danger" effect="dark">{{ Math.floor(100 * (scope.row.index /
+                            <el-tag class="tag" v-else type="info" effect="dark">{{ Math.floor(100 * (scope.row.index /
                                 scope.row.size)) }}%</el-tag>
                         </template>
                     </el-table-column>
@@ -36,7 +36,8 @@
                                 <el-col :span="8">
                                     <el-button class="button" v-if="scope.row.index != scope.row.size" disabled size="small"
                                         type="info">下载</el-button>
-                                    <el-button class="button" v-else size="small" type="warning">下载</el-button>
+                                    <el-button class="button" v-else size="small" type="warning"
+                                        @click="download(scope.row)">下载</el-button>
                                 </el-col>
                             </el-row>
                         </template>
@@ -53,7 +54,7 @@ import SparkMD5 from 'spark-md5'
 import Navigation from './Navigation.vue'
 import { Menu } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { Fetch } from '@/lib/comm'
+import { Fetch, DownloadFileFromURL } from '@/lib/comm'
 import { UploadFilled } from '@element-plus/icons-vue'
 
 interface UploadRequestOptions {
@@ -184,8 +185,13 @@ function remove(uploadFile: UploadFile, uploadFiles: UploadFiles): Awaitable<boo
     return true
 }
 
+function download(row: FileMeta) {
+    DownloadFileFromURL(`${group}/download?file=${row.md5}`, row.name)
+}
+
 function upload(opt: UploadRequestOptions): any {
     return new Promise((resolve, reject) => {
+        
         let file = opt.file
         if (fileUpload.get(file.name)) {
             let error = `文件：${file.name}，正在上传`

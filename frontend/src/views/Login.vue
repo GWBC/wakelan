@@ -2,10 +2,10 @@
     <div class="cfg_main">
         <el-form class="cfg" label-position="right" label-width="100px" :model="formData">
             <el-form-item label="密钥">
-                <el-input ref="code" placeholder="请输入密钥" v-model="formData.code" />
+                <el-input ref="code" placeholder="请输入密钥" @keydown.enter="onLogin" v-model="formData.code" />
             </el-form-item>
             <el-form-item label="">
-                <el-button class="btn full-width" type="primary" @click="onLogin()">登录</el-button>
+                <el-button class="btn full-width" type="primary" @click="onLogin">登录</el-button>
             </el-form-item>
         </el-form>
     </div>
@@ -22,8 +22,12 @@ const formData = ref({
 })
 
 function onLogin() {
-    Fetch(`/api/login?code=${formData.value.code}`, null, info => {
-        router.push("/")
+    Fetch<number>(`/api/login?code=${formData.value.code}`, null, secretLen => {
+        if (secretLen == 0) {
+            router.push("/config")
+        } else {
+            router.push("/")
+        }
     })
 }
 

@@ -60,6 +60,7 @@ func (a *Web) SetFileAPI(r *gin.Engine) {
 	group := r.Group("/api/file")
 	group.GET("/meta", api.GetFileMeta)
 	group.POST("/upload", api.Upload)
+	group.GET("/download", api.Download)
 }
 
 // ///////////////////////////////////////////////////////////////////
@@ -105,7 +106,7 @@ func (a *Web) Login(r *gin.Engine) {
 
 		c.JSON(200, gin.H{
 			"err":   "",
-			"infos": "",
+			"infos": len(info.Secret),
 		})
 	})
 }
@@ -126,18 +127,18 @@ func (a *Web) LoadStatic(r *gin.Engine) {
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 允许所有来源访问，也可以设置特定的来源地址
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Origin", "*")
 
 		// 设置其他 CORS 头部，根据需要进行调整
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Origin, Authorization, Content-Type, Accept")
+		c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		c.Header("Access-Control-Allow-Headers", "Origin, Authorization, Content-Type, Accept")
 
 		// 允许发送 Cookie，如果有需要的话
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Credentials", "true")
 
 		// 如果是 OPTIONS 请求，直接返回 200 状态码，以处理预检请求
 		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(200)
+			c.AbortWithStatus(http.StatusOK)
 			return
 		}
 

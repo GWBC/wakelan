@@ -26,6 +26,7 @@
                     <el-input v-model.number="formData.wxpusher_topicid" />
                 </el-form-item>
                 <el-form-item label="动态密码">
+                    <el-text v-if="formData.auth_url.length == 0" class="text">请生成动态密码，使用手机小程序【动态密码】</el-text>
                     <qrcode-vue v-if="formData.auth_url.length != 0" :value="formData.auth_url" :options="qrCodeOptions" />
                 </el-form-item>
                 <el-form-item label="">
@@ -40,11 +41,12 @@
 </template>
  
 <script setup lang="ts">
-import { Fetch } from '@/lib/comm';
+import { Fetch, DeleteCookie } from '@/lib/comm';
 import Navigation from './Navigation.vue'
 import { Menu } from '@element-plus/icons-vue'
 import { ref, onMounted } from 'vue'
 import QrcodeVue from 'qrcode.vue';
+import router from '@/router';
 
 interface AuthPwd {
     auth_url: string
@@ -65,7 +67,7 @@ const navigationShow = ref(false)
 
 const formData = ref<GuacdInfo>({
     guacd_host: '127.0.0.1',
-    guacd_port: 4822,    
+    guacd_port: 4822,
     auth_url: '',
     secret: '',
     ayff_token: '',
@@ -80,14 +82,21 @@ const qrCodeOptions = ref({
     height: 200,
 })
 
+let secret: string
+
 function getData() {
     Fetch<GuacdInfo>(`${group}configinfo`, null, info => {
         formData.value = info
+        secret = info.secret
     })
 }
 
 function onModify() {
     Fetch(`${group}setconfig?info=${encodeURIComponent(JSON.stringify(formData.value))}`, null, info => {
+        if (secret != formData.value.secret) {
+            DeleteCookie('token')
+            router.push("/login")
+        }
     })
 }
 
@@ -116,6 +125,12 @@ onMounted(function () {
 
 .cfg {
     width: 600px
+}
+
+.text {
+    color: red;
+    font-size: 16px;
+    font-weight: bold;
 }
 </style>
  
