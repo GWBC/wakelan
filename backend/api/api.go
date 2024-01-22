@@ -30,6 +30,7 @@ func (a *Web) SetWakeAPI(r *gin.Engine) {
 	group.GET("/opencard", api.openCard)
 	group.GET("/getselectnetcard", api.getSelectNetCard)
 	group.GET("/pingpc", api.pingPC)
+	group.GET("/editpcinfo", api.editPCInfo)
 }
 
 func (a *Web) SetRemoteAPI(r *gin.Engine) {

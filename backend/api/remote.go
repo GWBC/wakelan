@@ -59,11 +59,30 @@ func (r *Remote) decrypt(decData string) (string, error) {
 func (r *Remote) setting(c *gin.Context) {
 	data, _ := c.GetRawData()
 
-	info := &db.RemoteInfo{}
-	info.IP = c.Query("ip")
+	info := &db.AttachInfo{}
+	info.Mac = c.Query("mac")
 	info.Remote = string(data)
 	dbObj := db.DBOperObj().GetDB()
-	result := dbObj.Save(info)
+
+	if len(info.Mac) == 0 {
+		c.JSON(200, gin.H{
+			"err": "MAC不能为空",
+		})
+		return
+	}
+
+	result := dbObj.Model(info).Update("remote", info.Remote)
+	if result.Error != nil {
+		c.JSON(200, gin.H{
+			"err": result.Error.Error(),
+		})
+
+		return
+	}
+
+	if result.RowsAffected == 0 {
+		result = dbObj.Save(info)
+	}
 
 	if result.Error != nil {
 		c.JSON(200, gin.H{

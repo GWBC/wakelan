@@ -5,50 +5,50 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 	"wakelan/backend/comm"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type MacInfo struct {
-	IP     string     `gorm:"column:ip;primary_key" json:"ip"`
-	Mac    string     `gorm:"column:mac" json:"mac"`
-	MANUF  string     `gorm:"column:manuf" json:"manuf"`
-	Star   StarInfo   `gorm:"foreignkey:ip;references:ip" json:"star_info"`
-	Remote RemoteInfo `gorm:"foreignkey:ip;references:ip" json:"remote_info"`
+	IP         string     `gorm:"column:ip;primary_key" json:"ip"`
+	Mac        string     `gorm:"column:mac;primary_key" json:"mac"`
+	MANUF      string     `gorm:"column:manuf" json:"manuf"`
+	AttachInfo AttachInfo `gorm:"foreignkey:mac;references:mac" json:"attach_info"`
 }
 
-type StarInfo struct {
-	IP   string `gorm:"column:ip;primary_key" json:"ip"`
-	Star bool   `gorm:"column:star" json:"star"`
-}
-
-type RemoteInfo struct {
-	IP     string `gorm:"column:ip;primary_key" json:"ip"`
-	Remote string `gorm:"column:remote" json:"remote"`
+type AttachInfo struct {
+	Mac      string `gorm:"column:mac;primary_key" json:"mac"`
+	Star     bool   `gorm:"column:star" json:"star"`
+	Describe string `gorm:"column:describe" json:"describe"`
+	Remote   string `gorm:"column:remote" json:"remote"`
 }
 
 type GlobalInfo struct {
 	gorm.Model
 	IP        string `gorm:"column:ip"`
 	NetCard   string `gorm:"column:netcard"`
-	GuacdHost string `gorm:"column:guacd_host"  json:"guacd_host"`
-	GuacdPort int    `gorm:"column:guacd_port"  json:"guacd_port"`
-	Secret    string `gorm:"column:secret"  json:"secret"`
-	AuthURL   string `gorm:"column:auth_url"  json:"auth_url"`
+	GuacdHost string `gorm:"column:guacd_host" json:"guacd_host"`
+	GuacdPort int    `gorm:"column:guacd_port" json:"guacd_port"`
+	Secret    string `gorm:"column:secret" json:"secret"`
+	AuthURL   string `gorm:"column:auth_url" json:"auth_url"`
 
-	AYFFToken       string `gorm:"column:ayff_token"  json:"ayff_token"`
-	WXPusherToken   string `gorm:"column:wxpusher_token"  json:"wxpusher_token"`
-	WXPusherTopicId int    `gorm:"column:wxpusher_topicid"  json:"wxpusher_topicid"`
+	AYFFToken       string `gorm:"column:ayff_token" json:"ayff_token"`
+	WXPusherToken   string `gorm:"column:wxpusher_token" json:"wxpusher_token"`
+	WXPusherTopicId int    `gorm:"column:wxpusher_topicid" json:"wxpusher_topicid"`
+
+	Debug bool `gorm:"column:debug" json:"debug"`
 }
 
 type Log struct {
 	gorm.Model
-	Cmd string `gorm:"column:cmd"  json:"cmd"`
-	Msg string `gorm:"column:msg"  json:"msg"`
+	Cmd string `gorm:"column:cmd" json:"cmd"`
+	Msg string `gorm:"column:msg" json:"msg"`
 }
 
 // 处理json编码
@@ -107,14 +107,16 @@ func (d *DBOper) Init() error {
 	os.MkdirAll(dbPath, 0755)
 
 	db, err := gorm.Open(sqlite.Open(filepath.Join(dbPath, "data.db")), &gorm.Config{})
+
 	if err != nil {
 		return err
 	}
 
 	d.db = db
 
-	db.AutoMigrate(&MacInfo{}, &GlobalInfo{}, &StarInfo{}, &RemoteInfo{}, &Log{}, &FileMeta{})
+	db.AutoMigrate(&MacInfo{}, &GlobalInfo{}, &AttachInfo{}, &Log{}, &FileMeta{})
 
+	d.SwitchLogger()
 	d.initData(db)
 
 	return nil
@@ -129,6 +131,40 @@ func (d *DBOper) GetConfig() *GlobalInfo {
 	d.db.Find(info)
 
 	return info
+}
+
+func (d *DBOper) SwitchLogger() {
+	cfg := d.GetConfig()
+
+	if cfg.Debug {
+		d.db.Config.Logger = logger.New(d, logger.Config{
+			SlowThreshold: 200 * time.Millisecond, //慢日志阈值
+			LogLevel:      logger.Info,            //日志等级
+			Colorful:      false,                  //是否彩色打印
+		})
+	} else {
+		d.db.Config.Logger = d.db.Config.Logger.LogMode(logger.Silent)
+	}
+}
+
+func (d *DBOper) DBLog(cmd string, format string, a ...any) {
+	if len(a) < 4 {
+		return
+	}
+
+	info := &Log{}
+	info.Cmd = cmd
+	info.Msg = a[3].(string)
+
+	if strings.Contains(info.Msg, "logs") {
+		return
+	}
+
+	d.db.Save(info)
+}
+
+func (d *DBOper) Printf(format string, a ...any) {
+	d.DBLog("SQL语句", format, a...)
 }
 
 // /////////////////////////////////////////////////

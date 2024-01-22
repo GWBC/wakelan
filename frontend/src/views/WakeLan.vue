@@ -36,18 +36,24 @@
         :default-sort="{ prop: 'ip', order: 'ascending' }" @sort-change="customSort">
         <el-table-column width="40">
           <template #default="scope">
-            <el-icon v-show="scope.row.star_info.star">
+            <el-icon v-show="scope.row.attach_info.star">
               <StarFilled color="#67C23A" />
             </el-icon>
-            <el-icon v-show="!scope.row.star_info.star">
+            <el-icon v-show="!scope.row.attach_info.star">
               <StarFilled color="#b1b3b8" />
             </el-icon>
           </template>
         </el-table-column>
         <el-table-column prop="ip" label="地址" width="180" sortable="custom" />
         <el-table-column prop="mac" label="硬件地址" width="180" />
-        <el-table-column prop="manuf" label="描述" width="300" />
-        <el-table-column width="60">
+        <el-table-column label="描述" width="380">
+          <template #default="scope">
+            <el-input v-if="scope.row.edit" placeholder="编辑描述" v-model="scope.row.attach_info.describe" />
+            <el-text v-else-if="scope.row.attach_info.describe"> {{ scope.row.attach_info.describe }} </el-text>
+            <el-text v-else> {{ scope.row.manuf }}</el-text>
+          </template>
+        </el-table-column>
+        <el-table-column label="在线" width="80">
           <template #default="scope">
             <el-icon v-show="scope.row.online">
               <CircleCheck color="#529b2e" />
@@ -57,6 +63,11 @@
             </el-icon>
           </template>
         </el-table-column>
+        <el-table-column label="编辑" width="80">
+          <template #default="scope">
+            <el-switch @change="(val: boolean) => { editChange(val, scope.row) }" v-model="scope.row.edit"></el-switch>
+          </template>
+        </el-table-column>
         <el-table-column width="180" fixed="right" label="操作">
           <template #default="scope">
             <el-row>
@@ -64,9 +75,9 @@
                 <el-button size="small" type="success" @click.stop="onRemoteCfg(scope.row)">配置</el-button>
               </el-col>
               <el-col :span="8">
-                <el-button v-if="!scope.row.star_info.star" type="warning" size="small"
+                <el-button v-if="!scope.row.attach_info.star" type="warning" size="small"
                   @click.stop="addStar(scope.$index, scope.row)">收藏</el-button>
-                <el-button v-else="scope.row.star_info.star" type="info" size="small"
+                <el-button v-else="scope.row.attach_info.star" type="info" size="small"
                   @click.stop="cancelStar(scope.$index, scope.row)">取消</el-button>
               </el-col>
               <el-col :span="8">
@@ -82,7 +93,7 @@
 
 <script setup lang="ts">
 import '@/assets/wakelan.css'
-import { Fetch } from '@/lib/comm'
+import { Fetch, AsyncFetch } from '@/lib/comm'
 import { Menu } from '@element-plus/icons-vue'
 import Remote from '@/components/Remote.vue'
 import Navigation from './Navigation.vue'
@@ -92,13 +103,10 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { RemoteType } from '@/lib/guacd/client'
 import type { RemoteConfigInfo } from '@/lib/guacd/client'
 
-interface StarInfo {
-  ip: string
+interface AttachInfo {
+  mac: string
   star: boolean
-}
-
-interface RemoteInfo {
-  ip: string
+  describe: string
   remote: string
 }
 
@@ -107,9 +115,9 @@ interface PCInfo {
   ip: string
   mac: string
   manuf: string
-  star_info: StarInfo
-  remote_info: RemoteInfo
+  attach_info: AttachInfo
   online: boolean
+  edit: boolean
 }
 
 //网卡信息
@@ -169,6 +177,15 @@ const table_data_filter = computed(() => {
     return table_data
   }
 })
+
+function editChange(val: boolean, pcInfo: PCInfo) {
+  if (!val) {
+    pcInfo.edit = true
+    AsyncFetch(`${group}editpcinfo?mac=${pcInfo.mac}&describe=${pcInfo.attach_info.describe}`, null).then(() => {
+      pcInfo.edit = false
+    })
+  }
+}
 
 function wsOpen(event: Event) {
 
@@ -295,14 +312,14 @@ function customSort(oper: any) {
 }
 
 function addStar(cloumn: any, row: any) {
-  Fetch(`${group}operstar?star=1&ip=${row.ip}`, null, infos => {
-    row.star_info.star = true
+  Fetch(`${group}operstar?star=1&mac=${row.mac}`, null, infos => {
+    row.attach_info.star = true
   })
 }
 
 function cancelStar(cloumn: any, row: any) {
-  Fetch(`${group}operstar?star=0&ip=${row.ip}`, null, infos => {
-    row.star_info.star = false
+  Fetch(`${group}operstar?star=0&mac=${row.mac}`, null, infos => {
+    row.attach_info.star = false
   })
 }
 
@@ -335,10 +352,14 @@ function pingAllPC() {
 }
 
 function onOpenRemote(pcInfo: PCInfo) {
+  if (pcInfo.edit) {
+    return
+  }
+
   let data: RemoteConfigInfo[] = []
 
   try {
-    data = JSON.parse(pcInfo.remote_info.remote)
+    data = JSON.parse(pcInfo.attach_info.remote)
   } catch (error) {
     data = []
   }
@@ -367,7 +388,7 @@ function onOpenRemote(pcInfo: PCInfo) {
     remoteEdit.value = false
 
     try {
-      data = JSON.parse(pcInfo.remote_info.remote)
+      data = JSON.parse(pcInfo.attach_info.remote)
     } catch (error) {
       data = []
     }
@@ -378,7 +399,7 @@ function onOpenRemote(pcInfo: PCInfo) {
 
 function onRemoteCfg(pcInfo: PCInfo) {
   remoteCfgShow.value = true
-  if (pcInfo.remote_info.ip.length == 0) {
+  if (pcInfo.attach_info.mac.length == 0) {
     //添加
     remoteEdit.value = true
     remoteHost.value = pcInfo.ip
@@ -389,7 +410,7 @@ function onRemoteCfg(pcInfo: PCInfo) {
     remoteHost.value = pcInfo.ip
     let data = []
     try {
-      data = JSON.parse(pcInfo.remote_info.remote)
+      data = JSON.parse(pcInfo.attach_info.remote)
     } catch (error) {
       data = []
     }
@@ -398,20 +419,23 @@ function onRemoteCfg(pcInfo: PCInfo) {
   }
 }
 
-function onRemoteConfig(edit: boolean, host: string, info: RemoteConfigInfo[]) {
+function onRemoteConfig(edit: boolean, host: string, datas: RemoteConfigInfo[]) {
   if (edit) {
     remoteCfgShow.value = false
 
     for (let i = 0; i < table_data.length; ++i) {
       if (table_data[i].ip == host) {
-        table_data[i].remote_info.ip = host
-        table_data[i].remote_info.remote = JSON.stringify(info)
-        break
+        Fetch(`api/remote/setting?mac=${table_data[i].mac}`, datas, infos => {
+          table_data[i].attach_info.mac = host
+          table_data[i].attach_info.remote = JSON.stringify(datas)
+        })
+
+        return
       }
     }
   } else {
-    if (info[0].remote.type == RemoteType.HTTP) {
-      let remote = info[0].remote
+    if (datas[0].remote.type == RemoteType.HTTP) {
+      let remote = datas[0].remote
       let protocol = 'http'
 
       if (remote.https) {
@@ -423,7 +447,7 @@ function onRemoteConfig(edit: boolean, host: string, info: RemoteConfigInfo[]) {
     }
 
     remoteShow.value = true
-    remoteConnInfo.value = info[0]
+    remoteConnInfo.value = datas[0]
   }
 }
 

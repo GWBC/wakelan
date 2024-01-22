@@ -56,7 +56,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-    submit: [edit: boolean, host: string, info: RemoteConfigInfo[]]
+    submit: [edit: boolean, host: string, datas: RemoteConfigInfo[]]
 }>()
 
 const host = ref('')
@@ -115,9 +115,7 @@ function onDBClick(info: RemoteConfigInfo) {
 }
 
 function onSetting() {
-    Fetch(`api/remote/setting?ip=${props.host}`, datas, infos => {
-        emit('submit', props.edit, props.host, datas)
-    })
+    emit('submit', props.edit, props.host, datas)
 }
 
 function onSubmit(oldCfg: RemoteConfigInfo | null, newCfg: RemoteConfigInfo) {

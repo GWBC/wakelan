@@ -164,8 +164,8 @@ func (w *WakeApi) getNetworklist(c *gin.Context) {
 	//获取加星
 	infos = []db.MacInfo{}
 
-	//注意：Star和Remote是结构字段的名称，不是表名
-	result := dbObj.Joins("Star").Joins("Remote").Find(&infos, "Star.star==1")
+	//注意：AttachInfo是结构字段的名称，不是表名
+	result := dbObj.Joins("AttachInfo").Find(&infos, "AttachInfo.star==1")
 
 	sort.Slice(infos, func(i, j int) bool {
 		ip1 := net.ParseIP(infos[i].IP)
@@ -186,8 +186,8 @@ func (w *WakeApi) getNetworklist(c *gin.Context) {
 
 	var tmpInfo = []db.MacInfo{}
 
-	result = dbObj.Joins("Star").Joins("Remote").
-		Where("Star.star is null").Find(&tmpInfo)
+	result = dbObj.Joins("AttachInfo").
+		Where("AttachInfo.star is null or AttachInfo.star=0").Find(&tmpInfo)
 
 	sort.Slice(tmpInfo, func(i, j int) bool {
 		ip1 := net.ParseIP(tmpInfo[i].IP)
@@ -234,11 +234,30 @@ func (w *WakeApi) wakeLan(c *gin.Context) {
 
 // 操作星
 func (w *WakeApi) operStar(c *gin.Context) {
-	info := &db.StarInfo{}
-	info.IP = c.Query("ip")
+	info := &db.AttachInfo{}
+	info.Mac = c.Query("mac")
 	info.Star = c.Query("star") == "1"
 	dbObj := db.DBOperObj().GetDB()
-	result := dbObj.Save(info)
+
+	if len(info.Mac) == 0 {
+		c.JSON(200, gin.H{
+			"err": "MAC不能为空",
+		})
+		return
+	}
+
+	result := dbObj.Model(info).Update("star", info.Star)
+	if result.Error != nil {
+		c.JSON(200, gin.H{
+			"err": result.Error.Error(),
+		})
+
+		return
+	}
+
+	if result.RowsAffected == 0 {
+		result = dbObj.Save(info)
+	}
 
 	if result.Error != nil {
 		c.JSON(200, gin.H{
@@ -249,10 +268,52 @@ func (w *WakeApi) operStar(c *gin.Context) {
 	}
 
 	if info.Star {
-		db.DBLog("收藏", "Host：%s", info.IP)
+		db.DBLog("收藏", "Mac：%s", info.Mac)
 	} else {
-		db.DBLog("取消收藏", "Host：%s", info.IP)
+		db.DBLog("取消收藏", "Mac：%s", info.Mac)
 	}
+
+	c.JSON(200, gin.H{
+		"err": "",
+	})
+}
+
+// 编辑机器信息
+func (w *WakeApi) editPCInfo(c *gin.Context) {
+	info := &db.AttachInfo{}
+	info.Mac = c.Query("mac")
+	info.Describe = c.Query("describe")
+	dbObj := db.DBOperObj().GetDB()
+
+	if len(info.Mac) == 0 {
+		c.JSON(200, gin.H{
+			"err": "MAC不能为空",
+		})
+		return
+	}
+
+	result := dbObj.Model(info).Update("describe", info.Describe)
+	if result.Error != nil {
+		c.JSON(200, gin.H{
+			"err": result.Error.Error(),
+		})
+
+		return
+	}
+
+	if result.RowsAffected == 0 {
+		result = dbObj.Save(info)
+	}
+
+	if result.Error != nil {
+		c.JSON(200, gin.H{
+			"err": result.Error.Error(),
+		})
+
+		return
+	}
+
+	db.DBLog("编辑机器信息", "Mac：%s，描述：%s", info.Mac, info.Describe)
 
 	c.JSON(200, gin.H{
 		"err": "",

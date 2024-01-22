@@ -25,6 +25,9 @@
                 <el-form-item label="微信推送主题">
                     <el-input v-model.number="formData.wxpusher_topicid" />
                 </el-form-item>
+                <el-form-item label="调试模式">
+                    <el-switch v-model="formData.debug" />
+                </el-form-item>
                 <el-form-item label="动态密码">
                     <el-text v-if="formData.auth_url.length == 0" class="text">请生成动态密码，使用手机小程序【动态密码】</el-text>
                     <qrcode-vue v-if="formData.auth_url.length != 0" :value="formData.auth_url" :options="qrCodeOptions" />
@@ -54,6 +57,7 @@ interface AuthPwd {
 }
 
 interface GuacdInfo {
+    debug: boolean
     guacd_host: string
     guacd_port: number
     auth_url: string
@@ -66,6 +70,7 @@ interface GuacdInfo {
 const navigationShow = ref(false)
 
 const formData = ref<GuacdInfo>({
+    debug: false,
     guacd_host: '127.0.0.1',
     guacd_port: 4822,
     auth_url: '',

@@ -25,6 +25,8 @@ type ConfigInfo struct {
 	AYFFToken       string `gorm:"column:ayff_token"  json:"ayff_token"`
 	WXPusherToken   string `gorm:"column:wxpusher_token"  json:"wxpusher_token"`
 	WXPusherTopicId int    `gorm:"column:wxpusher_topicid"  json:"wxpusher_topicid"`
+
+	Debug bool `gorm:"column:debug" json:"debug"`
 }
 
 type System struct {
@@ -97,6 +99,8 @@ func (r *System) GetConfigInfo(c *gin.Context) {
 	guacdInfo.WXPusherToken = info.WXPusherToken
 	guacdInfo.WXPusherTopicId = info.WXPusherTopicId
 
+	guacdInfo.Debug = info.Debug
+
 	c.JSON(200, gin.H{
 		"err":   "",
 		"infos": guacdInfo,
@@ -120,6 +124,7 @@ func (r *System) SetConfig(c *gin.Context) {
 	cfg := &db.GlobalInfo{}
 	dbObj := db.DBOperObj().GetDB()
 	dbObj.Find(cfg)
+	cfg.Debug = cfgInfo.Debug
 	cfg.GuacdHost = cfgInfo.GuacdHost
 	cfg.GuacdPort = cfgInfo.GuacdPort
 	cfg.AuthURL = cfgInfo.AuthURL
@@ -129,7 +134,9 @@ func (r *System) SetConfig(c *gin.Context) {
 	cfg.WXPusherTopicId = cfgInfo.WXPusherTopicId
 
 	dbObj.Select("guacd_host", "guacd_port", "auth_url", "secret",
-		"ayff_token", "wxpusher_token", "wxpusher_topicid").Save(cfg)
+		"ayff_token", "wxpusher_token", "wxpusher_topicid", "debug").Save(cfg)
+
+	db.DBOperObj().SwitchLogger()
 
 	c.JSON(200, gin.H{
 		"err":   "",

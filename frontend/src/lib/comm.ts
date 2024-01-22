@@ -55,6 +55,58 @@ export async function Fetch<T>(url: string, postData: any, resCallback: FetchRes
     })
 }
 
+//拉取数据
+export async function AsyncFetch<T>(url: string, postData: any): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        let res = null
+
+        if (postData) {
+            const requestOptions: RequestInit = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(postData)
+            };
+
+            res = fetch(url, requestOptions)
+        } else {
+            res = fetch(url)
+        }
+
+        return res.then(response => {
+            if (!response.ok) {
+                throw response.statusText
+            }
+
+            try {
+                return response.json()
+            } catch (errors) {
+                throw errors
+            }
+        }).then(data => {
+            if (!data) {
+                throw new Error("unknown error")
+            }
+
+            if (data.err.length != 0) {
+                throw data.err
+            }
+
+            resolve(data.infos)
+        }).catch(error => {
+            if (error.toString().includes("token")) {
+                router.push('/login')
+            } else {
+                console.log(`URL:${url} ${error.toString()}`)
+                ElMessage.error(error.toString())
+                reject(error.toString())
+            }
+        })
+    })
+}
+
 //下载文件
 export function DownloadFile(data: Blob, filename: string) {
     const url = URL.createObjectURL(data);
