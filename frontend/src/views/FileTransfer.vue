@@ -1,61 +1,68 @@
 <template>
-    <Navigation v-model="navigationShow" />
-    <el-container class="wakelan-layout">
-        <el-header class="wakelan-header">
-            <el-row :gutter="10">
-                <el-col :xs="2" :sm="2" :md="1">
-                    <el-button :icon="Menu" @click="navigationShow = true" />
-                </el-col>
-            </el-row>
-        </el-header>
-        <el-container class="wakelan-layout">
-            <el-aside width="40%">
-                <el-upload class="upload" :show-file-list=true drag action="/api/file/upload" :http-request="upload"
-                    :before-remove="remove">
-                    <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-                    <div class="el-upload__text">
-                        将文件放到这里或 <em>点击上传</em>
-                    </div>
-                </el-upload>
-            </el-aside>
-            <el-main class="wakelan-main">
-                <el-table class="table" :data="metaDatas" empty-text=" " stripe>
-                    <el-table-column prop="time" label="时间" width="220" />
-                    <el-table-column prop="name" label="文件名" width="280" />
-                    <el-table-column label="进度" width="160">
-                        <template #default="scope">
-                            <el-tag class="tag" v-if="scope.row.index == scope.row.size" type="success"
-                                effect="dark">100%</el-tag>
-                            <el-tag class="tag" v-else type="info" effect="dark">{{ Math.floor(100 * (scope.row.index /
-                                scope.row.size)) }}%</el-tag>
-                        </template>
-                    </el-table-column>
-                    <el-table-column fixed="right" label="操作">
-                        <template #default="scope">
-                            <el-row>
-                                <el-col :span="8">
-                                    <el-button class="button" v-if="scope.row.index != scope.row.size" disabled size="small"
-                                        type="info">下载</el-button>
-                                    <el-button class="button" v-else size="small" type="warning"
-                                        @click="download(scope.row)">下载</el-button>
-                                </el-col>
-                            </el-row>
-                        </template>
-                    </el-table-column>
-                </el-table>
-            </el-main>
-        </el-container>
-    </el-container>
+    <MainPage>
+        <template #header/>
+        <template #main>
+            <el-container class="sub-container">
+                <el-aside width="50%">
+                    <el-upload ref="uploadObj" class="upload" :show-file-list=true drag action="/api/file/upload"
+                        :http-request="upload" :before-remove="remove" multiple>
+                        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+                        <div class="el-upload__text">
+                            将文件放到这里或 <em>点击上传</em>
+                        </div>
+                    </el-upload>
+                    <el-table class="table" :data="metaDatas" empty-text=" " stripe>
+                        <el-table-column prop="time" label="时间" min-width="150" />
+                        <el-table-column prop="name" label="文件名" min-width="280" />
+                        <el-table-column label="进度" min-width="100">
+                            <template #default="scope">
+                                <el-tag class="tag" v-if="scope.row.index == scope.row.size" type="success"
+                                    effect="dark">100%</el-tag>
+                                <el-tag class="tag" v-else type="info" effect="dark">{{ Math.floor(100 * (scope.row.index /
+                                    scope.row.size)) }}%</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column fixed="right" label="操作" min-width="100">
+                            <template #default="scope">
+                                <el-row>
+                                    <el-col :span="8">
+                                        <el-button class="button" v-if="scope.row.index != scope.row.size" disabled
+                                            size="small" type="info">下载</el-button>
+                                        <el-button class="button" v-else size="small" type="warning"
+                                            @click="download(scope.row)">下载</el-button>
+                                    </el-col>
+                                </el-row>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </el-aside>
+                <el-main class="wakelan-main">
+                    <el-form :model="sharedInfo">
+                        <el-form-item label="分享地址">
+                            <el-input readonly ref="sharedInput" @focus="sharedFocus" v-model="sharedInfo.path"></el-input>
+                        </el-form-item>
+                        <el-form-item>
+                            <qrcode-vue :value="sharedInfo.path" :options="{
+                                width: 200,
+                                height: 200,
+                            }" />
+                        </el-form-item>
+
+                    </el-form>
+                </el-main>
+            </el-container>
+        </template>
+    </MainPage>
 </template>
   
 <script setup lang="ts">
 import { onMounted, ref, reactive } from 'vue'
 import SparkMD5 from 'spark-md5'
-import Navigation from './Navigation.vue'
-import { Menu } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import QrcodeVue from 'qrcode.vue'
 import { Fetch, DownloadFileFromURL } from '@/lib/comm'
 import { UploadFilled } from '@element-plus/icons-vue'
+import MainPage from '@/components/MainPage.vue'
 
 interface UploadRequestOptions {
     action: string
@@ -101,10 +108,18 @@ interface FileMeta {
     time: string
 }
 
+interface SharedInfo {
+    path: string
+}
+
 type Awaitable<T> = Promise<T> | T
 
-const navigationShow = ref(false)
+const uploadObj = ref()
+
 const metaDatas = ref<FileMeta[]>([])
+
+const sharedInput = ref()
+const sharedInfo = ref<SharedInfo>({} as SharedInfo)
 
 let group = "/api/file"
 let fileUpload = new Map()
@@ -156,7 +171,14 @@ async function CalcMd5(file: File): Promise<FileMeta> {
                 meta.md5 = spark.end()
                 spark.destroy()
                 fileMeta(meta.md5).then(metas => {
-                    resolve(metas[0])
+                    if (metas.length == 0) {
+                        meta.index = 0
+                        meta.name = file.name
+                        meta.size = file.size
+                        resolve(meta)
+                    } else {
+                        resolve(metas[0])
+                    }
                 }).catch(err => {
                     reject(err)
                 })
@@ -180,8 +202,13 @@ async function CalcMd5(file: File): Promise<FileMeta> {
     })
 }
 
+function sharedFocus() {
+    sharedInput.value.select()
+}
+
 function remove(uploadFile: UploadFile, uploadFiles: UploadFiles): Awaitable<boolean> {
     fileUpload.delete(uploadFile.name)
+    pullMetaData()
     return true
 }
 
@@ -191,7 +218,7 @@ function download(row: FileMeta) {
 
 function upload(opt: UploadRequestOptions): any {
     return new Promise((resolve, reject) => {
-        
+
         let file = opt.file
         if (fileUpload.get(file.name)) {
             let error = `文件：${file.name}，正在上传`
@@ -253,6 +280,7 @@ function upload(opt: UploadRequestOptions): any {
                         fileUpload.delete(file.name)
                         opt.onSuccess(true)
                         ElMessage.success(`文件：${file.name}，上传完成`)
+                        uploadObj.value.clearFiles('success')
                         resolve(true)
                     }
                 }).catch(error => {
@@ -288,12 +316,14 @@ onMounted(() => {
 
 <style scoped>
 .upload {
-    margin: 42px 20px 0px 20px;
+    margin: 20px 20px 0px 20px;
+    height: 30%;
 }
 
 .table {
-    width: 100%;
-    height: 100%;
+    margin: 20px 0px 0px 20px;
+    width: 96%;
+    height: 60%;
 }
 
 .tag {
@@ -302,5 +332,9 @@ onMounted(() => {
 
 .button {
     width: 60px;
+}
+
+.sub-container {
+    height: 100%;
 }
 </style>

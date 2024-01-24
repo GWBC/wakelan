@@ -142,6 +142,10 @@ func WXPusherMsg(msg string, appToken string, topicId int) error {
 }
 
 func IpLess(a, b net.IP) bool {
+	if len(b) == 0 {
+		return false
+	}
+
 	for i := 0; i < len(a); i++ {
 		if a[i] < b[i] {
 			return true

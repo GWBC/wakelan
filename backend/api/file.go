@@ -61,7 +61,7 @@ func (f *FileTransfer) GetFileMeta(c *gin.Context) {
 	dbObj := db.DBOperObj().GetDB()
 	var res *gorm.DB
 	if len(md5) == 0 {
-		res = dbObj.Find(&datas)
+		res = dbObj.Order("created_at DESC").Find(&datas)
 	} else {
 		res = dbObj.Where("md5=?", md5).Find(&datas)
 	}
@@ -75,10 +75,6 @@ func (f *FileTransfer) GetFileMeta(c *gin.Context) {
 	}
 
 	if len(datas) == 0 {
-		datas = append(datas, db.FileMeta{
-			MD5: md5,
-		})
-
 		c.JSON(200, gin.H{
 			"err":   "",
 			"infos": datas,

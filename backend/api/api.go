@@ -23,7 +23,7 @@ func (a *Web) SetWakeAPI(r *gin.Engine) {
 	group.GET("/getip", api.getGlobalIP)
 	group.GET("/getinterfaces", api.getInterfaces)
 	group.GET("/probenetwork", api.probeNetwork)
-	group.GET("/cleannetworklist", api.cleanNetworklist)
+	group.GET("/delnetworklist", api.delNetworklist)
 	group.GET("/getnetworklist", api.getNetworklist)
 	group.GET("/wakeLan", api.wakeLan)
 	group.GET("/operstar", api.operStar)
@@ -31,6 +31,7 @@ func (a *Web) SetWakeAPI(r *gin.Engine) {
 	group.GET("/getselectnetcard", api.getSelectNetCard)
 	group.GET("/pingpc", api.pingPC)
 	group.GET("/editpcinfo", api.editPCInfo)
+	group.GET("/addnetworklist", api.addNetworklist)
 }
 
 func (a *Web) SetRemoteAPI(r *gin.Engine) {

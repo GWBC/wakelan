@@ -1,55 +1,50 @@
 <template>
-    <Navigation v-model="navigationShow" />
-    <el-container class="wakelan-layout">
-        <el-header class="wakelan-header">
-            <el-row :gutter="10">
-                <el-col :xs="2" :sm="2" :md="1">
-                    <el-button :icon="Menu" @click="navigationShow = true" />
-                </el-col>
-            </el-row>
-        </el-header>
-        <el-main class="wakelan-main cfg_main">
-            <el-form class="cfg" label-position="left" label-width="100px" :model="formData">
-                <el-form-item label="Guacd主机">
-                    <el-input v-model="formData.guacd_host" />
-                </el-form-item>
-                <el-form-item label="Guacd端口">
-                    <el-input v-model.number="formData.guacd_port" />
-                </el-form-item>
-                <el-form-item label="爱语飞飞">
-                    <el-input v-model="formData.ayff_token" />
-                </el-form-item>
-                <el-form-item label="微信推送">
-                    <el-input v-model="formData.wxpusher_token" />
-                </el-form-item>
-                <el-form-item label="微信推送主题">
-                    <el-input v-model.number="formData.wxpusher_topicid" />
-                </el-form-item>
-                <el-form-item label="调试模式">
-                    <el-switch v-model="formData.debug" />
-                </el-form-item>
-                <el-form-item label="动态密码">
-                    <el-text v-if="formData.auth_url.length == 0" class="text">请生成动态密码，使用手机小程序【动态密码】</el-text>
-                    <qrcode-vue v-if="formData.auth_url.length != 0" :value="formData.auth_url" :options="qrCodeOptions" />
-                </el-form-item>
-                <el-form-item label="">
-                    <div class="btn_container">
-                        <el-button type="danger" @click="onGenPassowrd">生成动态密码</el-button>
-                        <el-button type="primary" @click="onModify()">提交</el-button>
-                    </div>
-                </el-form-item>
-            </el-form>
-        </el-main>
-    </el-container>
+    <MainPage>
+        <template #header />
+        <template #main>
+            <div class="cfg_main">
+                <el-form class="cfg" label-position="left" label-width="100px" :model="formData">
+                    <el-form-item label="Guacd主机">
+                        <el-input v-model="formData.guacd_host" />
+                    </el-form-item>
+                    <el-form-item label="Guacd端口">
+                        <el-input v-model.number="formData.guacd_port" />
+                    </el-form-item>
+                    <el-form-item label="爱语飞飞">
+                        <el-input v-model="formData.ayff_token" />
+                    </el-form-item>
+                    <el-form-item label="微信推送">
+                        <el-input v-model="formData.wxpusher_token" />
+                    </el-form-item>
+                    <el-form-item label="微信推送主题">
+                        <el-input v-model.number="formData.wxpusher_topicid" />
+                    </el-form-item>
+                    <el-form-item label="调试模式">
+                        <el-switch v-model="formData.debug" />
+                    </el-form-item>
+                    <el-form-item label="动态密码">
+                        <el-text v-if="formData.auth_url.length == 0" class="text">请生成动态密码，使用手机小程序【动态密码】</el-text>
+                        <qrcode-vue v-if="formData.auth_url.length != 0" :value="formData.auth_url"
+                            :options="qrCodeOptions" />
+                    </el-form-item>
+                    <el-form-item label="">
+                        <div class="btn_container">
+                            <el-button type="danger" @click="onGenPassowrd">生成动态密码</el-button>
+                            <el-button type="primary" @click="onModify()">提交</el-button>
+                        </div>
+                    </el-form-item>
+                </el-form>
+            </div>
+        </template>
+    </MainPage>
 </template>
  
 <script setup lang="ts">
-import { Fetch, DeleteCookie } from '@/lib/comm';
-import Navigation from './Navigation.vue'
-import { Menu } from '@element-plus/icons-vue'
+import { Fetch, DeleteCookie } from '@/lib/comm'
 import { ref, onMounted } from 'vue'
-import QrcodeVue from 'qrcode.vue';
-import router from '@/router';
+import QrcodeVue from 'qrcode.vue'
+import router from '@/router'
+import MainPage from '@/components/MainPage.vue'
 
 interface AuthPwd {
     auth_url: string
@@ -66,8 +61,6 @@ interface GuacdInfo {
     wxpusher_token: string
     wxpusher_topicid: number
 }
-
-const navigationShow = ref(false)
 
 const formData = ref<GuacdInfo>({
     debug: false,

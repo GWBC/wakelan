@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"gorm.io/gorm"
 )
 
 // 获取网卡信息
@@ -124,10 +125,49 @@ func (w *WakeApi) probeNetwork(c *gin.Context) {
 	})
 }
 
-// 清空网络列表
-func (w *WakeApi) cleanNetworklist(c *gin.Context) {
+// 删除网络列表
+func (w *WakeApi) delNetworklist(c *gin.Context) {
+	ip := c.Query("ip")
+
 	dbObj := db.DBOperObj().GetDB()
-	result := dbObj.Delete(&db.MacInfo{}, "1=1")
+
+	var result *gorm.DB = nil
+	if len(ip) == 0 {
+		result = dbObj.Delete(&db.MacInfo{}, "1=1")
+	} else {
+		result = dbObj.Where("ip=?", ip).Delete(&db.MacInfo{})
+	}
+
+	if result.Error != nil {
+		c.JSON(200, gin.H{
+			"err": result.Error.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err": "",
+	})
+}
+
+// 添加网络列表
+func (w *WakeApi) addNetworklist(c *gin.Context) {
+	info := &db.MacInfo{}
+	info.IP = c.Query("ip")
+	info.Mac = c.Query("mac")
+	info.AttachInfo.Mac = info.Mac
+	info.AttachInfo.Describe = c.Query("describe")
+
+	if len(info.IP) == 0 || len(info.Mac) == 0 {
+		c.JSON(200, gin.H{
+			"err": "IP和Mac不能为空",
+		})
+		return
+	}
+
+	dbObj := db.DBOperObj().GetDB()
+
+	result := dbObj.Save(info)
 	if result.Error != nil {
 		c.JSON(200, gin.H{
 			"err": result.Error.Error(),
