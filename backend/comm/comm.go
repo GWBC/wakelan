@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/md5"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -216,4 +219,71 @@ func AES_CBC_Open(data []byte, key []byte, iv []byte) ([]byte, error) {
 	ciperObj.CryptBlocks(dst, data)
 
 	return dst, nil
+}
+
+type NetInfo struct {
+	IP  []string
+	MAC string
+}
+
+// 获取本机IP和MAC
+func GetIPAndMac() ([]NetInfo, error) {
+	netInfos := []NetInfo{}
+
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		return netInfos, err
+	}
+
+	for _, iface := range interfaces {
+		if iface.Flags&net.FlagUp != 0 && //启动
+			iface.Flags&net.FlagLoopback == 0 && //非loopback
+			iface.Flags&net.FlagPointToPoint == 0 { //非虚拟
+			netInfo := NetInfo{}
+
+			addrs, err := iface.Addrs()
+			if err != nil {
+				continue
+			}
+
+			for _, addr := range addrs {
+				netInfo.IP = append(netInfo.IP, addr.String())
+			}
+
+			hwAddr := iface.HardwareAddr
+			if hwAddr == nil {
+				continue
+			}
+
+			netInfo.MAC = hwAddr.String()
+			netInfos = append(netInfos, netInfo)
+		}
+	}
+
+	return netInfos, nil
+}
+
+// 生成当前机器的唯一key
+func GenUniqueKey() string {
+	key := "A4540D1E84B1C931013FE8968B61834F"
+
+	netInfo, _ := GetIPAndMac()
+	if len(netInfo) != 0 {
+		sum := md5.Sum([]byte(netInfo[0].MAC))
+		key = hex.EncodeToString(sum[:])
+	}
+
+	return key
+}
+
+// 生成随机key
+func GenRandKey() string {
+	bytes := make([]byte, 32)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return ""
+	}
+
+	sum := md5.Sum(bytes)
+	return hex.EncodeToString(sum[:])
 }

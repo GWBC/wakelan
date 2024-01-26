@@ -38,6 +38,8 @@ type GlobalInfo struct {
 	Secret    string `gorm:"column:secret" json:"secret"`
 	AuthURL   string `gorm:"column:auth_url" json:"auth_url"`
 
+	RandKey string `gorm:"column:rand_key" json:"rand_key"`
+
 	AYFFToken       string `gorm:"column:ayff_token" json:"ayff_token"`
 	WXPusherToken   string `gorm:"column:wxpusher_token" json:"wxpusher_token"`
 	WXPusherTopicId int    `gorm:"column:wxpusher_topicid" json:"wxpusher_topicid"`
@@ -98,7 +100,17 @@ func (d *DBOper) initData(db *gorm.DB) {
 		initData := GlobalInfo{}
 		initData.GuacdHost = "127.0.0.1"
 		initData.GuacdPort = 4822
+		initData.RandKey = comm.GenRandKey()
 		db.Create(&initData)
+	} else {
+		cfg := d.GetConfig()
+		if len(cfg.RandKey) == 0 {
+			cfg.RandKey = comm.GenRandKey()
+			ret := db.Save(cfg)
+			if ret.Error != nil {
+				panic(ret.Error.Error())
+			}
+		}
 	}
 }
 

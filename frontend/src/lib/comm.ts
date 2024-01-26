@@ -10,22 +10,28 @@ interface FetchResponse<T> {
 export async function Fetch<T>(url: string, postData: any, resCallback: FetchResponse<T>) {
     let res = null
 
-    if (postData) {
-        const requestOptions: RequestInit = {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify(postData)
-        };
+    try {
+        if (postData) {
+            const requestOptions: RequestInit = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(postData)
+            };
 
-        res = fetch(url, requestOptions)
-    } else {
-        res = fetch(url)
+            res = fetch(url, requestOptions)
+        } else {
+            res = fetch(url)
+        }
+    } catch (error: any) {
+        console.log(`URL:${url} ${error.toString()}`)
+        ElMessage.error(error.toString())
+        return
     }
 
-    return res.then(response => {
+    res.then(response => {
         if (!response.ok) {
             throw response.statusText
         }
@@ -60,19 +66,25 @@ export async function AsyncFetch<T>(url: string, postData: any): Promise<T> {
     return new Promise<T>((resolve, reject) => {
         let res = null
 
-        if (postData) {
-            const requestOptions: RequestInit = {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify(postData)
-            };
+        try {
+            if (postData) {
+                const requestOptions: RequestInit = {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(postData)
+                };
 
-            res = fetch(url, requestOptions)
-        } else {
-            res = fetch(url)
+                res = fetch(url, requestOptions)
+            } else {
+                res = fetch(url)
+            }
+        } catch (error: any) {
+            console.log(`URL:${url} ${error.toString()}`)
+            ElMessage.error(error.toString())
+            return
         }
 
         return res.then(response => {

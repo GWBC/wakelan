@@ -1,7 +1,7 @@
 
 <template>
   <Remote v-model="remoteShow" :conn-info="remoteConnInfo" />
-  <RemoteConfig v-model="remoteCfgShow" :host="remoteHost" :data="remoteInfo" :edit="remoteEdit"
+  <RemoteConfig v-model="remoteCfgShow" :host="remoteHost" :data="remoteInfo" :edit="remoteEdit" :rand-key="remoteRandKey"
     @submit="onRemoteConfig" />
   <el-dialog v-model="addPCInfoDlgShow" :append-to-body=true @close="closeAddPCInfoDlg" @open="openAddPCInfoDlg">
     <el-form :model="addPCInfoDlgData" label-width="auto">
@@ -49,7 +49,7 @@
       </el-row>
     </template>
     <template #main>
-      <div ref="table_ref" style="height: 100%;">
+      <el-card ref="table_ref" class="wakelan_card">
         <el-table class="disable-text-selection" :height="table_height"
           element-loading-background="rgba(255, 255, 255, 20)" v-loading="table_loading" :data="table_data_filter" stripe
           @row-dblclick="onOpenRemote" style="width: 100%" empty-text=" "
@@ -114,7 +114,7 @@
             </template>
           </el-table-column>
         </el-table>
-      </div>
+      </el-card>
     </template>
   </MainPage>
 </template>
@@ -171,6 +171,7 @@ const netcards = reactive<NetcardInfo[]>([])
 
 const remoteCfgShow = ref(false)
 const remoteHost = ref('')
+const remoteRandKey = ref('')
 const remoteInfo = ref<RemoteConfigInfo[]>([])
 const remoteEdit = ref(false)
 
@@ -326,44 +327,60 @@ function uninitWebsocket() {
 
 function initObserverSize() {
   resizeObserver = new ResizeObserver(entries => {
-    table_height.value = table_ref.value.offsetHeight
+    table_height.value = table_ref.value.$el.offsetHeight
   })
 
-  resizeObserver.observe(table_ref.value)
+  resizeObserver.observe(table_ref.value.$el)
 }
 
-function getData(isAes: number, showLoading: boolean = true) {
-  table_loading.value = showLoading
-  AsyncFetch<PCInfo[]>(`${group}getnetworklist?aes=${isAes}`, null).then(infos => {
-    for (let i = 0; i < infos.length; ++i) {
-      infos[i].online = false
-    }
-
-    table_data.value = infos
-    table_loading.value = false
-  }).catch(() => {
-    table_loading.value = false
-  })
-}
-
-function getNetCard() {
-  netcards.length = 0
-  Fetch<NetcardInfo[]>(`${group}getinterfaces`, null, infos => {
-    for (let i = 0; i < infos.length; ++i) {
-      netcards.push(infos[i])
-    }
-  })
-}
-
-function getNetcardSelect() {
-  Fetch<NetcardInfo>(`${group}getselectnetcard`, null, info => {
-    if (info.name) {
-      if (info.desc.length == 0) {
-        netcard_select.value = info.name
-      } else {
-        netcard_select.value = info.desc
+function getData(isAes: number, showLoading: boolean = true): Promise<boolean> {
+  return new Promise<boolean>((resolve, reject) => {
+    table_loading.value = showLoading
+    AsyncFetch<PCInfo[]>(`${group}getnetworklist?aes=${isAes}`, null).then(infos => {
+      for (let i = 0; i < infos.length; ++i) {
+        infos[i].online = false
       }
-    }
+
+      table_data.value = infos
+      table_loading.value = false
+      resolve(true)
+    }).catch(error => {
+      table_loading.value = false
+      reject(error)
+    })
+  })
+}
+
+function getNetCard(): Promise<boolean> {
+  return new Promise<boolean>((resolve, reject) => {
+    netcards.length = 0
+    AsyncFetch<NetcardInfo[]>(`${group}getinterfaces`, null).then(infos => {
+      for (let i = 0; i < infos.length; ++i) {
+        netcards.push(infos[i])
+      }
+
+      resolve(true)
+    }).catch(error => {
+      reject(error)
+    })
+  })
+}
+
+function getNetcardSelect(): Promise<boolean> {
+  return new Promise<boolean>((resolve, reject) => {
+    AsyncFetch<NetcardInfo>(`${group}getselectnetcard`, null).then(info => {
+      if (info.name) {
+        if (info.desc.length == 0) {
+          netcard_select.value = info.name
+        } else {
+          netcard_select.value = info.desc
+        }
+      }
+
+      resolve(true)
+    }).catch(error => {
+      reject(error)
+    })
   })
 }
 
@@ -545,12 +562,27 @@ function onRemoteConfig(edit: boolean, host: string, datas: RemoteConfigInfo[]) 
   }
 }
 
+function getRemoteRandKey() {
+  return new Promise<boolean>((resolve, reject) => {
+    AsyncFetch<string>(`${group}getRandKey`, null).then(infos => {
+      remoteRandKey.value = infos
+      resolve(true)
+    }).catch(error => {
+      reject(error)
+    })
+  })
+}
+
 onMounted(function () {
   initWebsocket()
   initObserverSize()
-  getNetcardSelect()
-  getNetCard()
-  getData(1)
+  getNetcardSelect().then(ret => {
+    getNetCard().then(ret => {
+      getRemoteRandKey().then(ret => {
+        getData(1)
+      })
+    })
+  })
 })
 
 onUnmounted(function () {
@@ -558,3 +590,10 @@ onUnmounted(function () {
   resizeObserver!.disconnect()
 })
 </script>
+
+<style scoped>
+.wakelan_card {
+  margin: 0px 20px 0px 20px;
+  height: 98%;
+}
+</style>

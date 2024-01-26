@@ -32,7 +32,7 @@
         <span>退出系统</span>
       </el-menu-item>
       <!-- <el-menu-item index="about">
-        <el-icon>
+        <el-icon></el-icon>
           <ChatDotRound />
         </el-icon>
         <span>关于</span>

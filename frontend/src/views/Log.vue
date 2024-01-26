@@ -2,17 +2,19 @@
     <MainPage>
         <template #header />
         <template #main>
-            <div style="height: 100%;" ref="table_ref">
-                <el-table :data="table_data" empty-text=" " :height="table_height" stripe v-loading="table_loading">
-                    <el-table-column prop="time" label="时间" width="180" />
-                    <el-table-column prop="cmd" label="动作" width="180" />
-                    <el-table-column prop="msg" label="信息" />
-                </el-table>
-                <el-pagination class="page" :page-sizes="[20, 30, 40, 60, 80]"
-                    layout="total, sizes, prev, pager, next, jumper" background :total="total" :default-page-size="pageSize"
-                    @current-change="Change" @size-change="SizeChange">
-                </el-pagination>
-            </div>
+            <el-card class="log-card" body-class="log-card-body">
+                <div class="log-main" ref="table_ref">
+                    <el-table :data="table_data" empty-text=" " :height="table_height" stripe v-loading="table_loading">
+                        <el-table-column prop="time" label="时间" width="180" />
+                        <el-table-column prop="cmd" label="动作" width="180" />
+                        <el-table-column prop="msg" label="信息" />
+                    </el-table>
+                    <el-pagination class="page" :page-sizes="[18, 40, 80, 100]"
+                        layout="total, sizes, prev, pager, next, jumper" background :total="total"
+                        :default-page-size="pageSize" @current-change="Change" @size-change="SizeChange">
+                    </el-pagination>
+                </div>
+            </el-card>
         </template>
     </MainPage>
 </template>
@@ -35,7 +37,8 @@ interface LogSizeInfo {
 }
 
 const total = ref(0)
-const pageSize = ref(20)
+const pageSizes = ref([18, 20, 40, 60, 80, 100])
+const pageSize = ref(pageSizes.value[0])
 
 const table_ref = ref()
 const table_height = ref(0)
@@ -95,7 +98,22 @@ onUnmounted(function () {
 
 </script>
 
+<style>
+.log-card-body {
+    height: 98%;
+}
+</style>
+
 <style scoped>
+.log-card {
+    margin: 0px 20px 0px 20px;
+    height: 98%;
+}
+
+.log-main {
+    height: 100%;
+}
+
 .page {
     margin-top: 10px;
     margin-left: 10px;

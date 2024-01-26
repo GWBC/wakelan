@@ -1,13 +1,15 @@
 <template>
-    <div class="cfg_main">
-        <el-form class="cfg" label-position="right" label-width="100px" :model="formData">
-            <el-form-item label="密钥">
-                <el-input ref="code" placeholder="请输入密钥" @keydown.enter="onLogin" v-model="formData.code" />
-            </el-form-item>
-            <el-form-item label="">
-                <el-button class="btn full-width" type="primary" @click="onLogin">登录</el-button>
-            </el-form-item>
-        </el-form>
+    <div class="login_main">
+        <el-card class="login_card">
+            <el-form class="login" label-position="right" label-width="100px" :model="formData">
+                <el-form-item label="密钥">
+                    <el-input ref="code" placeholder="请输入密钥" @keydown.enter.prevent="onLogin" v-model="formData.code" />
+                </el-form-item>
+                <el-form-item label="">
+                    <el-button class="btn full-width" type="primary" @click="onLogin">登录</el-button>
+                </el-form-item>
+            </el-form>
+        </el-card>
     </div>
 </template>
   
@@ -42,15 +44,24 @@ onMounted(function () {
     margin-left: auto;
 }
 
-.cfg_main {
+.login_main {
     height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.cfg {
-    width: 400px
+.login_card {
+    width: 650px;
+    height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login {
+    width: 400px;
+    padding-right: 60px;
 }
 </style>
  

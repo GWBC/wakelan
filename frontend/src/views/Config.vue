@@ -2,7 +2,7 @@
     <MainPage>
         <template #header />
         <template #main>
-            <div class="cfg_main">
+            <el-card class="cfg_card">
                 <el-form class="cfg" label-position="left" label-width="100px" :model="formData">
                     <el-form-item label="Guacd主机">
                         <el-input v-model="formData.guacd_host" />
@@ -34,16 +34,17 @@
                         </div>
                     </el-form-item>
                 </el-form>
-            </div>
+            </el-card>
         </template>
     </MainPage>
 </template>
  
 <script setup lang="ts">
-import { Fetch, DeleteCookie } from '@/lib/comm'
+import { AsyncFetch, DeleteCookie } from '@/lib/comm'
 import { ref, onMounted } from 'vue'
 import QrcodeVue from 'qrcode.vue'
 import router from '@/router'
+import { ElMessage } from 'element-plus'
 import MainPage from '@/components/MainPage.vue'
 
 interface AuthPwd {
@@ -83,23 +84,25 @@ const qrCodeOptions = ref({
 let secret: string
 
 function getData() {
-    Fetch<GuacdInfo>(`${group}configinfo`, null, info => {
+    AsyncFetch<GuacdInfo>(`${group}configinfo`, null).then(info => {
         formData.value = info
         secret = info.secret
     })
 }
 
 function onModify() {
-    Fetch(`${group}setconfig?info=${encodeURIComponent(JSON.stringify(formData.value))}`, null, info => {
+    AsyncFetch(`${group}setconfig?info=${encodeURIComponent(JSON.stringify(formData.value))}`, null).then(info => {
         if (secret != formData.value.secret) {
             DeleteCookie('token')
             router.push("/login")
+        } else {
+            ElMessage.success(`修改成功`)
         }
     })
 }
 
 function onGenPassowrd() {
-    Fetch<AuthPwd>(`${group}genpwd`, null, info => {
+    AsyncFetch<AuthPwd>(`${group}genpwd`, null).then(info => {
         formData.value.auth_url = info.auth_url
         formData.value.secret = info.secret
     })
@@ -116,9 +119,11 @@ onMounted(function () {
     margin-left: auto;
 }
 
-.cfg_main {
+.cfg_card {
     display: flex;
     justify-content: center;
+    margin: 0px 20px 0px 20px;
+    padding: 60px 0px 0px 60px;
 }
 
 .cfg {

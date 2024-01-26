@@ -4,62 +4,66 @@
             <el-main>
                 <el-tabs>
                     <el-tab-pane label="远程服务">
-                        <el-form :model="data" label-width="auto">
-                            <el-form-item label="主机">
-                                <el-input v-model="data.remote.host" disabled />
-                            </el-form-item>
-                            <el-form-item label="端口">
-                                <el-input v-model="data.remote.port" />
-                            </el-form-item>
-                            <el-form-item label="协议">
-                                <el-select v-model="data.remote.type" placeholder="选择协议" @change="onSelectChange">
-                                    <el-option label="RDP" :value=RemoteType.RDP />
-                                    <el-option label="VNC" :value=RemoteType.VNC />
-                                    <el-option label="SSH" :value=RemoteType.SSH />
-                                    <!-- <el-option label="TELNET" :value=RemoteType.TELNET /> -->
-                                    <el-option label="HTTP" :value=RemoteType.HTTP />
-                                </el-select>
-                            </el-form-item>
-                            <el-form-item v-if="data.remote.type != RemoteType.HTTP" label="用户">
-                                <el-input v-model="data.remote.user" />
-                            </el-form-item>
-                            <el-form-item v-if="data.remote.type != RemoteType.HTTP" label="密码">
-                                <el-input type="password" placeholder="请输入密码" v-model="data.remote.pwd" />
-                            </el-form-item>
-                            <el-form-item v-if="data.remote.type == RemoteType.HTTP" label="路径">
-                                <el-input v-model="data.remote.path" />
-                            </el-form-item>
-                            <el-form-item v-if="data.remote.type == RemoteType.HTTP" label="HTTPS">
-                                <el-switch @change="httpSwitch" v-model="data.remote.https" />
-                            </el-form-item>
-                        </el-form>
+                        <el-card>
+                            <el-form :model="data" label-width="auto">
+                                <el-form-item label="主机">
+                                    <el-input v-model="data.remote.host" disabled />
+                                </el-form-item>
+                                <el-form-item label="端口">
+                                    <el-input v-model="data.remote.port" />
+                                </el-form-item>
+                                <el-form-item label="协议">
+                                    <el-select v-model="data.remote.type" placeholder="选择协议" @change="onSelectChange">
+                                        <el-option label="RDP" :value=RemoteType.RDP />
+                                        <el-option label="VNC" :value=RemoteType.VNC />
+                                        <el-option label="SSH" :value=RemoteType.SSH />
+                                        <!-- <el-option label="TELNET" :value=RemoteType.TELNET /> -->
+                                        <el-option label="HTTP" :value=RemoteType.HTTP />
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item v-if="data.remote.type != RemoteType.HTTP" label="用户">
+                                    <el-input v-model="data.remote.user" />
+                                </el-form-item>
+                                <el-form-item v-if="data.remote.type != RemoteType.HTTP" label="密码">
+                                    <el-input type="password" placeholder="请输入密码" v-model="data.remote.pwd" />
+                                </el-form-item>
+                                <el-form-item v-if="data.remote.type == RemoteType.HTTP" label="路径">
+                                    <el-input v-model="data.remote.path" />
+                                </el-form-item>
+                                <el-form-item v-if="data.remote.type == RemoteType.HTTP" label="HTTPS">
+                                    <el-switch @change="httpSwitch" v-model="data.remote.https" />
+                                </el-form-item>
+                            </el-form>
+                        </el-card>
                     </el-tab-pane>
                     <el-tab-pane v-if="data.remote.type != RemoteType.HTTP" label=" SFTP服务">
-                        <el-form :model="data" label-width="auto">
-                            <el-form-item label="启动">
-                                <el-switch v-model="data.sftp.enable" />
-                            </el-form-item>
-                            <el-form-item label="权限">
-                                <el-checkbox label="上传" v-model="data.sftp.up" :disabled="!data.sftp.enable" />
-                                <el-checkbox label="下载" v-model="data.sftp.down" :disabled="!data.sftp.enable" />
-                            </el-form-item>
-                            <el-form-item label="主机">
-                                <el-input v-model="data.sftp.host" :disabled="!data.sftp.enable" />
-                            </el-form-item>
-                            <el-form-item label="端口">
-                                <el-input v-model="data.sftp.port" :disabled="!data.sftp.enable" />
-                            </el-form-item>
-                            <el-form-item label="用户">
-                                <el-input v-model="data.sftp.user" :disabled="!data.sftp.enable" />
-                            </el-form-item>
-                            <el-form-item label="密码">
-                                <el-input type="password" placeholder="请输入密码" v-model="data.sftp.pwd"
-                                    :disabled="!data.sftp.enable" />
-                            </el-form-item>
-                            <el-form-item label="根路径">
-                                <el-input v-model="data.sftp.rootPath" :disabled="!data.sftp.enable" />
-                            </el-form-item>
-                        </el-form>
+                        <el-card>
+                            <el-form :model="data" label-width="auto">
+                                <el-form-item label="启动">
+                                    <el-switch v-model="data.sftp.enable" />
+                                </el-form-item>
+                                <el-form-item label="权限">
+                                    <el-checkbox label="上传" v-model="data.sftp.up" :disabled="!data.sftp.enable" />
+                                    <el-checkbox label="下载" v-model="data.sftp.down" :disabled="!data.sftp.enable" />
+                                </el-form-item>
+                                <el-form-item label="主机">
+                                    <el-input v-model="data.sftp.host" :disabled="!data.sftp.enable" />
+                                </el-form-item>
+                                <el-form-item label="端口">
+                                    <el-input v-model="data.sftp.port" :disabled="!data.sftp.enable" />
+                                </el-form-item>
+                                <el-form-item label="用户">
+                                    <el-input v-model="data.sftp.user" :disabled="!data.sftp.enable" />
+                                </el-form-item>
+                                <el-form-item label="密码">
+                                    <el-input type="password" placeholder="请输入密码" v-model="data.sftp.pwd"
+                                        :disabled="!data.sftp.enable" />
+                                </el-form-item>
+                                <el-form-item label="根路径">
+                                    <el-input v-model="data.sftp.rootPath" :disabled="!data.sftp.enable" />
+                                </el-form-item>
+                            </el-form>
+                        </el-card>
                     </el-tab-pane>
                 </el-tabs>
             </el-main>
@@ -83,6 +87,7 @@ import type { RemoteConfigInfo, RemoteInfo, SFTPInfo } from '@/lib/guacd/client'
 
 const props = defineProps<{
     host: string
+    randKey: string
     data: RemoteConfigInfo | null
 }>()
 
@@ -99,8 +104,7 @@ const data = reactive<RemoteConfigInfo>({
 const t2p = [3389, 5900, 22, 23, 80]
 const t2u = ['Administrator', 'Administrator', 'root', 'Administrator', '']
 
-const iv = 'aaaaaaaaaabbbbbb'
-const key = '111111111122222222223333333333aa'
+const iv = '41FD220EB4878B42'
 
 function onOpen() {
     if (props.data != null) {
@@ -171,22 +175,26 @@ function onSelectChange() {
 
     if (data.remote.type == RemoteType.SSH) {
         data.sftp.port = data.remote.port
-        data.sftp.user = data.remote.user
-        data.sftp.pwd = data.remote.pwd
     }
 }
 
 function onSubmit() {
+    if (data.remote.type == RemoteType.SSH) {
+        data.sftp.port = data.remote.port
+        data.sftp.user = data.remote.user
+        data.sftp.pwd = data.remote.pwd
+    }
+
     data.id = data.remote.host + data.remote.port
-    data.remote.pwd = AESEncrypt(data.remote.pwd, key, iv)
-    data.sftp.pwd = AESEncrypt(data.sftp.pwd, key, iv)
+    data.remote.pwd = AESEncrypt(data.remote.pwd, props.randKey, iv)
+    data.sftp.pwd = AESEncrypt(data.sftp.pwd, props.randKey, iv)
     emit('submit', props.data, data)
 }
 
-function httpSwitch(){
-    if(data.remote.https && data.remote.port == 80){
+function httpSwitch() {
+    if (data.remote.https && data.remote.port == 80) {
         data.remote.port = 443
-    }else if(!data.remote.https && data.remote.port == 443){
+    } else if (!data.remote.https && data.remote.port == 443) {
         data.remote.port = 80
     }
 }

@@ -24,14 +24,15 @@ type Remote struct {
 func (r *Remote) Init() {
 	r.t2s = make(map[int]string)
 
-	r.key = []byte("111111111122222222223333333333aa")
-	r.iv = []byte("aaaaaaaaaabbbbbb")
-
 	//0:rdp 1:vnc 2:ssh 3:telnel
 	r.t2s[0] = "RDP"
 	r.t2s[1] = "VNC"
 	r.t2s[2] = "SSH"
 	r.t2s[3] = "TELNEL"
+
+	cfg := db.DBOperObj().GetConfig()
+	r.key = []byte(cfg.RandKey)
+	r.iv = []byte("41FD220EB4878B42")
 }
 
 func (r *Remote) decrypt(decData string) (string, error) {

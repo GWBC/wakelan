@@ -1,6 +1,6 @@
 <template>
     <el-dialog :append-to-body=true @open="onOpen">
-        <RemoteForm v-model="cfgDlgShow" :host="host" :data="cfgDlgData" @submit="onSubmit" />
+        <RemoteForm v-model="cfgDlgShow" :host="host" :rand-key="props.randKey" :data="cfgDlgData" @submit="onSubmit" />
         <el-container>
             <el-header v-show="props.edit">
                 <el-row :gutter="10">
@@ -17,16 +17,16 @@
                 <el-table height="200" :data="datas" empty-text=" " @row-dblclick="onDBClick">
                     <el-table-column label="协议" prop="remote.type">
                         <template #default="scope">
-                            <el-tag v-if="scope.row.remote.type == RemoteType.RDP"
-                                effect="dark">{{ p2s[scope.row.remote.type] }}</el-tag>
-                            <el-tag v-if="scope.row.remote.type == RemoteType.VNC" effect="dark"
-                                type="info">{{ p2s[scope.row.remote.type] }}</el-tag>
-                            <el-tag v-if="scope.row.remote.type == RemoteType.SSH" effect="dark"
-                                type="warning">{{ p2s[scope.row.remote.type] }}</el-tag>
-                            <el-tag v-if="scope.row.remote.type == RemoteType.TELNET" effect="dark"
-                                type="danger">{{ p2s[scope.row.remote.type] }}</el-tag>
-                            <el-tag v-if="scope.row.remote.type == RemoteType.HTTP" effect="dark"
-                                type="success">{{ p2s[scope.row.remote.type] }}</el-tag>
+                            <el-tag v-if="scope.row.remote.type == RemoteType.RDP" effect="dark">{{
+                                p2s[scope.row.remote.type] }}</el-tag>
+                            <el-tag v-if="scope.row.remote.type == RemoteType.VNC" effect="dark" type="info">{{
+                                p2s[scope.row.remote.type] }}</el-tag>
+                            <el-tag v-if="scope.row.remote.type == RemoteType.SSH" effect="dark" type="warning">{{
+                                p2s[scope.row.remote.type] }}</el-tag>
+                            <el-tag v-if="scope.row.remote.type == RemoteType.TELNET" effect="dark" type="danger">{{
+                                p2s[scope.row.remote.type] }}</el-tag>
+                            <el-tag v-if="scope.row.remote.type == RemoteType.HTTP" effect="dark" type="success">{{
+                                p2s[scope.row.remote.type] }}</el-tag>
                         </template>
                     </el-table-column>
                     <el-table-column label="主机" prop="remote.host"></el-table-column>
@@ -43,7 +43,7 @@
 </template>
         
 <script setup lang="ts">
-import { DeepCopy, Fetch } from '@/lib/comm'
+import { DeepCopy } from '@/lib/comm'
 import RemoteForm from './RemoteForm.vue'
 import { RemoteType } from '@/lib/guacd/client'
 import type { RemoteConfigInfo } from '@/lib/guacd/client';
@@ -51,6 +51,7 @@ import { ref, reactive } from 'vue'
 
 const props = defineProps<{
     host: string,
+    randKey: string,
     data: RemoteConfigInfo[],
     edit: boolean
 }>()

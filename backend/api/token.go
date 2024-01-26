@@ -1,13 +1,14 @@
 package api
 
 import (
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
 	"wakelan/backend/comm"
+	"wakelan/backend/db"
 )
 
 type TokenInfo struct {
@@ -20,8 +21,17 @@ type TokenManager struct {
 }
 
 func (tm *TokenManager) Init() {
-	tm.key = []byte("123456789012345678901234567890ab")
-	tm.iv = []byte("1234567890123456")
+	tm.ChangeKey()
+	tm.iv = []byte("941CC9A12E47BF17")
+}
+
+func (tm *TokenManager) ChangeKey() {
+	cfg := db.DBOperObj().GetConfig()
+	if len(cfg.Secret) < 32 {
+		cfg.Secret += comm.GenUniqueKey()
+	}
+
+	tm.key = []byte(cfg.Secret)[0:32]
 }
 
 func (tm *TokenManager) GenToken(minute int) (string, error) {
