@@ -6,7 +6,6 @@ import { GuacdFilesystem } from './filesystem'
 type GuacdStartConnFun = () => void
 type GuacdCancelConnFun = () => void
 type GuacdConnFinFun = () => void
-type GuacdDisconnFinFun = () => void
 
 interface GuacdSize {
     width: number
@@ -70,6 +69,7 @@ export class GuacdClient {
     private mouseProc: any
     private touchProc: any
     private inputSinkProc: any
+    private lastError: any
 
     constructor(displayEl: HTMLElement,
         onStartConn: GuacdStartConnFun,
@@ -83,6 +83,8 @@ export class GuacdClient {
 
     //连接服务
     Conn(connInfo: RemoteConfigInfo) {
+        this.lastError = ''
+
         //创建客户端连接对象
         const tunnel = new Guacamole.WebSocketTunnel("api/remote/conn")
         this.client = new Guacamole.Client(tunnel);
@@ -93,12 +95,13 @@ export class GuacdClient {
 
         //WS错误事件
         tunnel.onerror = (status: Guacamole.Status) => {
+            this.lastError = 'ws err'
             ElMessageBox.confirm(
-                status.message ? `服务异常，连接失败 => ${status.message}` : `服务异常，连接失败`,
+                status.message ? `连接WS错误 [ ${status.message} ]` : `连接WS错误，是否重连`,
                 {
                     confirmButtonText: '重连',
                     cancelButtonText: '取消',
-                    type: 'error',
+                    type: 'info',
                 }
             ).then(() => {
                 this.Reconn(connInfo)
@@ -113,12 +116,13 @@ export class GuacdClient {
 
         //错误事件
         this.client.onerror = (status: Guacamole.Status) => {
+            this.lastError = 'remote err'
             ElMessageBox.confirm(
-                status.message ? `服务异常，连接失败 => ${status.message}` : `服务异常，连接失败`,
+                status.message ? `连接远程错误 [ ${status.message} ]` : `连接远程错误，是否重连`,
                 {
                     confirmButtonText: '重连',
                     cancelButtonText: '取消',
-                    type: 'error',
+                    type: 'info',
                 }
             ).then(() => {
                 this.Reconn(connInfo)
@@ -147,6 +151,11 @@ export class GuacdClient {
                     break
                 case Guacamole.Client.State.DISCONNECTED: //断开连接
                     {
+                        //如果发送错误，由错误回调触发重连消息框
+                        if (this.lastError.length != 0) {
+                            return
+                        }
+
                         ElMessageBox.confirm(
                             `连接断开，是否重连`,
                             {

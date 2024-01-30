@@ -186,8 +186,20 @@ function onSubmit() {
     }
 
     data.id = data.remote.host + data.remote.port
-    data.remote.pwd = AESEncrypt(data.remote.pwd, props.randKey, iv)
-    data.sftp.pwd = AESEncrypt(data.sftp.pwd, props.randKey, iv)
+
+    if (props.data != null) {
+        if (data.remote.pwd != props.data.remote.pwd) {
+            data.remote.pwd = AESEncrypt(data.remote.pwd, props.randKey, iv)
+        }
+
+        if (data.sftp.pwd != props.data.sftp.pwd) {
+            data.sftp.pwd = AESEncrypt(data.sftp.pwd, props.randKey, iv)
+        }
+    } else {
+        data.remote.pwd = AESEncrypt(data.remote.pwd, props.randKey, iv)
+        data.sftp.pwd = AESEncrypt(data.sftp.pwd, props.randKey, iv)
+    }
+
     emit('submit', props.data, data)
 }
 

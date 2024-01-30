@@ -24,7 +24,7 @@
   </el-dialog>
   <MainPage>
     <template #header>
-      <el-row>
+      <el-row :gutter="5">
         <el-col :xs="5" :sm="6" :md="3">
           <el-input v-model="searchIP" placeholder="请输入筛选的IP地址" clearable />
         </el-col>

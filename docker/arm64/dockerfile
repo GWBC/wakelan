@@ -1,4 +1,4 @@
-#docker run -d --privileged --name wakelan --net host -e WAKE_PORT=3456 -v/root/wakelan/data:/root/wakelan/data gwbc/wakelan:arm64
+#docker run -d --privileged --name wakelan --restart unless-stopped --net host -e WAKE_PORT=3456 -v/root/wakelan/data:/root/wakelan/data gwbc/wakelan:arm64
 
 FROM gwbc/guacd_dev:arm64 AS build
 
