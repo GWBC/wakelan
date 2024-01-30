@@ -1,55 +1,102 @@
 <template>
+    <el-dialog v-model="qrcodeShow">
+        <div class="qrcode_container">
+            <qrcode-vue :value="sharedInfo.path" :size="400" />
+        </div>
+    </el-dialog>
     <el-container class="sub-container">
         <el-aside width="50%">
-            <el-card class="upload-card">
-                <el-upload ref="uploadObj" class="upload" :show-file-list=true drag action="/api/file/upload"
-                :http-request="upload" :before-remove="remove" multiple>
-                <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-                <div class="el-upload__text">
-                    将文件放到这里或 <em>点击上传</em>
-                </div>
-            </el-upload>
-            </el-card>           
+            <div class="upload_container">
+                <el-card class="upload-card">
+                    <el-upload ref="uploadObj" class="upload" :show-file-list=true drag action="/api/file/upload"
+                        :http-request="upload" :before-remove="remove" multiple>
+                        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+                        <div class="el-upload__text">
+                            将文件放到这里或 <em>点击上传</em>
+                        </div>
+                    </el-upload>
+                </el-card>
 
-            <el-card class="upload-process-card" body-class="full-height">
-                <el-table class="upload-process" :data="metaDatas" empty-text=" " stripe>
-                <el-table-column prop="time" label="时间" min-width="150" />
-                <el-table-column prop="name" label="文件名" min-width="280" />
-                <el-table-column label="进度" min-width="100">
-                    <template #default="scope">
-                        <el-tag class="tag" v-if="scope.row.index == scope.row.size" type="success"
-                            effect="dark">100%</el-tag>
-                        <el-tag class="tag" v-else type="info" effect="dark">{{ Math.floor(100 * (scope.row.index /
-                            scope.row.size)) }}%</el-tag>
-                    </template>
-                </el-table-column>
-                <el-table-column fixed="right" label="操作" min-width="100">
-                    <template #default="scope">
-                        <el-row>
-                            <el-col :span="8">
-                                <el-button class="button" v-if="scope.row.index != scope.row.size" disabled size="small"
-                                    type="info">下载</el-button>
-                                <el-button class="button" v-else size="small" type="warning"
-                                    @click="download(scope.row)">下载</el-button>
-                            </el-col>
-                        </el-row>
-                    </template>
-                </el-table-column>
-            </el-table>
-            </el-card>          
+                <el-card class="upload-process-card" body-class="full-height">
+                    <el-table class="upload-process" :data="metaDatas" empty-text=" " stripe>
+                        <el-table-column prop="time" label="时间" min-width="100" />
+                        <el-table-column prop="name" label="文件名" min-width="200" />
+                        <el-table-column label="进度" min-width="100">
+                            <template #default="scope">
+                                <el-tag class="tag" v-if="scope.row.index == scope.row.size" type="success"
+                                    effect="dark">100%</el-tag>
+                                <el-tag class="tag" v-else type="info" effect="dark">{{ Math.floor(100 * (scope.row.index /
+                                    scope.row.size)) }}%</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column fixed="right" label="操作" min-width="100">
+                            <template #default="scope">
+                                <el-row>
+                                    <el-col :span="8">
+                                        <el-button class="button" v-if="scope.row.index != scope.row.size" disabled
+                                            size="small" type="info">下载</el-button>
+                                        <el-button class="button" v-else size="small" type="warning"
+                                            @click="download(scope.row)">下载</el-button>
+                                    </el-col>
+                                </el-row>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </el-card>
+            </div>
         </el-aside>
         <el-main class="wakelan-main">
-            <el-form :model="sharedInfo">
-                <el-form-item label="分享地址">
-                    <el-input readonly ref="sharedInput" @focus="sharedFocus" v-model="sharedInfo.path"></el-input>
-                </el-form-item>
-                <el-form-item>
-                    <qrcode-vue :value="sharedInfo.path" :options="{
-                        width: 200,
-                        height: 200,
-                    }" />
-                </el-form-item>
-            </el-form>
+            <div class="right_container">
+                <el-card v-if="sharedKey.length == 0" class="addr_shared">
+                    <el-text class="shared_link" truncated>
+                        分享链接：<a :href="sharedInfo.path" target="_blank">{{ sharedInfo.path }}</a>
+                    </el-text>
+                    <el-button style="padding: 0px;" link :icon="DocumentCopy" @click="sharedCopy">复制</el-button>
+                    <el-button style="padding: 0px;" link @click="shardQRCode">
+                        <svg style="width: 16px; height: 16px; margin-right: 5px;" xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 512 512">
+                            <rect x="336" y="336" width="80" height="80" rx="8" ry="8" />
+                            <rect x="272" y="272" width="64" height="64" rx="8" ry="8" />
+                            <rect x="416" y="416" width="64" height="64" rx="8" ry="8" />
+                            <rect x="432" y="272" width="48" height="48" rx="8" ry="8" />
+                            <rect x="272" y="432" width="48" height="48" rx="8" ry="8" />
+                            <rect x="336" y="96" width="80" height="80" rx="8" ry="8" />
+                            <rect x="288" y="48" width="176" height="176" rx="16" ry="16" fill="none" stroke="currentColor"
+                                stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
+                            <rect x="96" y="96" width="80" height="80" rx="8" ry="8" />
+                            <rect x="48" y="48" width="176" height="176" rx="16" ry="16" fill="none" stroke="currentColor"
+                                stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
+                            <rect x="96" y="336" width="80" height="80" rx="8" ry="8" />
+                            <rect x="48" y="288" width="176" height="176" rx="16" ry="16" fill="none" stroke="currentColor"
+                                stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
+                        </svg>
+                        二维码
+                    </el-button>
+                </el-card>
+                <el-card class="message" body-class="full-height">
+                    <div class="message_container">
+                        <el-input v-model="msgData" :rows="3" type="textarea" @keydown.enter.prevent="sendMsg"
+                            placeholder="请输入消息，按回车发送消息" />
+                        <el-table :data="msgDatas" class="message_table" empty-text=" " stripe>
+                            <el-table-column label="时间" prop="time"></el-table-column>
+                            <el-table-column label="消息">
+                                <template #default="scope">
+                                    <el-text truncated>
+                                        {{ scope.row.msg }}
+                                    </el-text>
+                                </template>
+                            </el-table-column>
+                            <el-table-column label="操作" fixed="right" min-width="100px">
+                                <template #default="scope">
+                                    <el-button type="success" size="small" @click="msgCopy(scope.row)">复制</el-button>
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
+
+                </el-card>
+
+            </div>
         </el-main>
     </el-container>
 </template>
@@ -59,8 +106,9 @@ import { onMounted, ref } from 'vue'
 import SparkMD5 from 'spark-md5'
 import { ElMessage } from 'element-plus'
 import QrcodeVue from 'qrcode.vue'
-import { Fetch, DownloadFileFromURL } from '@/lib/comm'
-import { UploadFilled } from '@element-plus/icons-vue'
+import router from '@/router'
+import { UploadFilled, DocumentCopy } from '@element-plus/icons-vue'
+import { Fetch, AsyncFetch, DownloadFileFromURL, SetLocalClipboard } from '@/lib/comm'
 
 interface UploadRequestOptions {
     action: string
@@ -106,6 +154,11 @@ interface FileMeta {
     time: string
 }
 
+interface Message {
+    msg: string
+    time: string
+}
+
 interface SharedInfo {
     path: string
 }
@@ -115,16 +168,22 @@ type Awaitable<T> = Promise<T> | T
 const uploadObj = ref()
 
 const metaDatas = ref<FileMeta[]>([])
+const sharedInfo = ref<SharedInfo>({
+    path: 'https://www.baidu.com'
+} as SharedInfo)
 
-const sharedInput = ref()
-const sharedInfo = ref<SharedInfo>({} as SharedInfo)
+const msgData = ref('')
+const msgDatas = ref<Message[]>()
+
+const sharedKey = ref('')
+const qrcodeShow = ref(false)
 
 let group = "/api/file"
 let fileUpload = new Map()
 
 async function fileMeta(md5: string): Promise<FileMeta[]> {
     return new Promise((resolve, reject) => {
-        fetch(`${group}/meta?md5=${md5}`).
+        fetch(`${group}/meta?md5=${md5}&key=${sharedKey.value}`).
             then(response => {
                 if (!response.ok) {
                     throw response.statusText
@@ -158,7 +217,7 @@ async function CalcMd5(file: File): Promise<FileMeta> {
         let count = Math.ceil(file.size / block)
         let spark = new SparkMD5.ArrayBuffer()
 
-        const reader = new FileReader();
+        const reader = new FileReader()
         let meta = {} as FileMeta
 
         reader.onload = (e: ProgressEvent<FileReader>) => {
@@ -200,8 +259,23 @@ async function CalcMd5(file: File): Promise<FileMeta> {
     })
 }
 
-function sharedFocus() {
-    sharedInput.value.select()
+function sendMsg() {
+    AsyncFetch<Message>(`${group}/addMsg?key=${sharedKey.value}`, { "msg": msgData.value }).then((msg) => {
+        msgData.value = ''
+        console.log(msg)
+        msgDatas.value?.unshift(msg)
+        ElMessage.success("消息发送成功")
+    }).catch(err => {
+        ElMessage.success(`消息发送失败，${err.toString()}`)
+    })
+}
+
+function msgCopy(msg:Message){
+    SetLocalClipboard(msg.msg).then(()=>{
+        ElMessage.success("复制消息成功")
+    }).catch(err => {
+        ElMessage.error(`复制消息失败，${err.toString()}`)
+    })
 }
 
 function remove(uploadFile: UploadFile, uploadFiles: UploadFiles): Awaitable<boolean> {
@@ -211,7 +285,7 @@ function remove(uploadFile: UploadFile, uploadFiles: UploadFiles): Awaitable<boo
 }
 
 function download(row: FileMeta) {
-    DownloadFileFromURL(`${group}/download?file=${row.md5}`, row.name)
+    DownloadFileFromURL(`${group}/download?file=${row.md5}&key=${sharedKey.value}`, row.name)
 }
 
 function upload(opt: UploadRequestOptions): any {
@@ -250,7 +324,7 @@ function upload(opt: UploadRequestOptions): any {
                 formData.append('index', start.toString())
                 formData.append('size', file.size.toString())
 
-                fetch(opt.action, {
+                fetch(`${opt.action}?key=${sharedKey.value}`, {
                     method: 'POST',
                     body: formData,
                 }).then(response => {
@@ -301,36 +375,70 @@ function upload(opt: UploadRequestOptions): any {
 }
 
 function pullMetaData() {
-    Fetch<FileMeta[]>(`${group}/meta`, null, (infos: FileMeta[]) => {
+    Fetch<FileMeta[]>(`${group}/meta?key=${sharedKey.value}`, null, (infos: FileMeta[]) => {
         metaDatas.value = infos
     })
 }
 
+function pullSharedKey() {
+    return new Promise((resolve, reject) => {
+        AsyncFetch<string>(`${group}/genkey`, null).then(infos => {
+            resolve(infos)
+        }).catch(err => {
+            reject(err)
+        })
+    })
+}
+
+function sharedCopy() {
+    SetLocalClipboard(sharedInfo.value.path).then(ret => {
+        ElMessage.success("复制成功")
+    }).catch(err => {
+        ElMessage.error(`复制失败，${err.toString()}`)
+    })
+}
+
+function shardQRCode() {
+    qrcodeShow.value = true
+}
+
+function getMsg() {
+    return new Promise((resolve, reject) => {
+        AsyncFetch<Message[]>(`${group}/getMsg?key=${sharedKey.value}`, null).then(infos => {
+            msgDatas.value = infos
+            resolve(infos)
+        }).catch(err => {
+            reject(err)
+        })
+    })
+}
+
 onMounted(() => {
-    pullMetaData()
+    let curPage = router.currentRoute.value
+    if (curPage.path == "/shared") {
+        //共享页面
+        sharedKey.value = curPage.query["key"] as string
+        if (!sharedKey) {
+            //throw new Error("缺少参数Key")     //可以中止后续
+            ElMessage.error("缺少参数Key")
+        } else {
+            getMsg().then(() => {
+                pullMetaData()
+            })
+        }
+    } else {
+        pullSharedKey().then(key => {
+            sharedInfo.value.path = `${window.location.protocol}//${window.location.host}/shared?key=${key}`
+            getMsg().then(() => {
+                pullMetaData()
+            })
+        })
+    }
 })
 
 </script>
 
 <style scoped>
-.upload-card{
-    margin: 0px 20px 0px 20px; 
-    height: 35%;
-}
-
-.upload {
-    height: 100%;
-}
-
-.upload-process-card{
-    margin: 10px 20px 0px 20px;
-    height: 60%;
-}
-
-.upload-process {
-    height: 100%;
-}
-
 .tag {
     width: 60px;
 }
@@ -343,4 +451,67 @@ onMounted(() => {
     height: 100%;
 }
 
+.upload_container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.upload-card {
+    flex: 4;
+    margin: 10px 20px 0px 20px;
+}
+
+.upload {
+    height: 100%;
+}
+
+.upload-process-card {
+    flex: 5;
+    margin: 10px 20px 0px 20px;
+
+}
+
+.upload-process {
+    height: 97%;
+}
+
+.qrcode_container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.right_container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.shared_link {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.addr_shared {
+    min-width: 200px;
+    margin: 10px 20px 0px 20px;
+}
+
+.message {
+    flex: 1;
+    min-width: 200px;
+    margin: 10px 20px 0px 20px;
+}
+
+.message_container {
+    display: flex;
+    flex-direction: column;
+    height: 98%;
+}
+
+.message_table {
+    flex: 1;
+    margin-top: 20px;
+}
 </style>

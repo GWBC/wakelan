@@ -593,7 +593,7 @@ onUnmounted(function () {
 
 <style scoped>
 .wakelan_card {
-  margin: 0px 20px 0px 20px;
+  margin: 10px 20px 0px 20px;
   height: 98%;
 }
 </style>

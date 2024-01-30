@@ -202,3 +202,51 @@ export function AESDecrypt(msg: string, key: string, iv: string): string {
 export function DeleteCookie(key: string) {
     document.cookie = `${key}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api;`
 }
+
+//兼容复制到剪贴板
+function copyToClipboard(text: string) {
+    let textarea = document.createElement("textarea")
+    textarea.value = text
+    document.body.appendChild(textarea)
+
+    if (navigator.userAgent.match(/ipad|iphone/i)) {
+        let editable = textarea.contentEditable
+
+        textarea.contentEditable = "true"
+        let range = document.createRange()
+        range.selectNodeContents(textarea)
+        window.getSelection()?.removeAllRanges()
+        window.getSelection()?.addRange(range)
+        textarea.setSelectionRange(0, 999999)
+        textarea.blur()
+
+        setTimeout(function () {
+            textarea.contentEditable = editable
+        }, 100)
+    } else {
+        textarea.select()
+        document.execCommand('copy')
+    }
+
+    document.body.removeChild(textarea)
+}
+
+export async function SetLocalClipboard(data: string): Promise<boolean> {
+    return new Promise<boolean>((resolve, reject) => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(data).then(() => {
+                resolve(true)
+            }).catch(err => {
+                reject(err)
+            })
+        } else {
+            try {
+                copyToClipboard(data)
+                resolve(true)
+            } catch {
+                reject("浏览器无剪贴板权限或不支持剪贴板")
+            }
+        }
+    })
+
+}

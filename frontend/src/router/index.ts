@@ -33,6 +33,11 @@ const router = createRouter({
       path: '/filetransfer',
       name: 'filetransfer',
       component: () => import('../views/FileTransfer.vue')
+    },
+    {
+      path: '/shared',
+      name: 'shared',
+      component: () => import('../views/FileShared.vue')
     }
   ]
 })

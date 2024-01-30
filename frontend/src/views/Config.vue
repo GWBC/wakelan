@@ -122,7 +122,7 @@ onMounted(function () {
 .cfg_card {
     display: flex;
     justify-content: center;
-    margin: 0px 20px 0px 20px;
+    margin: 10px 20px 0px 20px;
     padding: 60px 0px 0px 60px;
 }
 
