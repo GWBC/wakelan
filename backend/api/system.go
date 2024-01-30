@@ -26,7 +26,8 @@ type ConfigInfo struct {
 	WXPusherToken   string `gorm:"column:wxpusher_token"  json:"wxpusher_token"`
 	WXPusherTopicId int    `gorm:"column:wxpusher_topicid"  json:"wxpusher_topicid"`
 
-	Debug bool `gorm:"column:debug" json:"debug"`
+	Debug       bool `gorm:"column:debug" json:"debug"`
+	SharedLimit int  `gorm:"column:shared_limit" json:"shared_limit"`
 }
 
 type System struct {
@@ -100,6 +101,7 @@ func (r *System) GetConfigInfo(c *gin.Context) {
 	guacdInfo.WXPusherTopicId = info.WXPusherTopicId
 
 	guacdInfo.Debug = info.Debug
+	guacdInfo.SharedLimit = info.SharedLimit
 
 	c.JSON(200, gin.H{
 		"err":   "",
@@ -125,6 +127,7 @@ func (r *System) SetConfig(c *gin.Context) {
 	dbObj := db.DBOperObj().GetDB()
 	dbObj.Find(cfg)
 	cfg.Debug = cfgInfo.Debug
+	cfg.SharedLimit = cfgInfo.SharedLimit
 	cfg.GuacdHost = cfgInfo.GuacdHost
 	cfg.GuacdPort = cfgInfo.GuacdPort
 	cfg.AuthURL = cfgInfo.AuthURL
@@ -134,7 +137,8 @@ func (r *System) SetConfig(c *gin.Context) {
 	cfg.WXPusherTopicId = cfgInfo.WXPusherTopicId
 
 	dbObj.Select("guacd_host", "guacd_port", "auth_url", "secret",
-		"ayff_token", "wxpusher_token", "wxpusher_topicid", "debug").Save(cfg)
+		"ayff_token", "wxpusher_token", "wxpusher_topicid",
+		"debug", "shared_limit").Save(cfg)
 
 	db.DBOperObj().SwitchLogger()
 

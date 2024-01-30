@@ -44,7 +44,8 @@ type GlobalInfo struct {
 	WXPusherToken   string `gorm:"column:wxpusher_token" json:"wxpusher_token"`
 	WXPusherTopicId int    `gorm:"column:wxpusher_topicid" json:"wxpusher_topicid"`
 
-	Debug bool `gorm:"column:debug" json:"debug"`
+	Debug       bool `gorm:"column:debug" json:"debug"`
+	SharedLimit int  `gorm:"column:shared_limit;default:7" json:"shared_limit"`
 }
 
 type Log struct {

@@ -41,13 +41,18 @@ func (f *FileTransfer) autoClean() {
 	go func() {
 		for {
 			dbObj := db.DBOperObj().GetDB()
+			cfg := db.DBOperObj().GetConfig()
 
 			t := time.Now()
 			fileMetas := []db.FileMeta{}
 			dbObj.Find(&fileMetas)
 
+			if cfg.SharedLimit <= 0 && cfg.SharedLimit >= 30 {
+				cfg.SharedLimit = 7
+			}
+
 			for _, data := range fileMetas {
-				if t.Sub(data.CreatedAt) > 7*24*time.Hour {
+				if t.Sub(data.CreatedAt) > time.Duration(cfg.SharedLimit)*24*time.Hour {
 					dbObj.Delete(data)
 					os.Remove(path.Join(f.filecachePath, data.MD5))
 				}
