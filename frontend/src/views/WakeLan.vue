@@ -121,7 +121,7 @@
 <script setup lang="ts">
 import '@/assets/wakelan.css'
 import { Fetch, AsyncFetch } from '@/lib/comm'
-import { Menu, Delete } from '@element-plus/icons-vue'
+import { Delete } from '@element-plus/icons-vue'
 import Remote from '@/components/remote/Remote.vue'
 import RemoteConfig from '@/components/remote/RemoteConfig.vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
@@ -159,7 +159,6 @@ interface WebsocketInfo {
   conn_timer: number
 }
 
-const table_height = ref(0)
 const table_loading = ref(false)
 const table_data = ref<PCInfo[]>([])
 

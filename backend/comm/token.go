@@ -1,14 +1,10 @@
-package api
+package comm
 
 import (
 	"encoding/base64"
 	"encoding/json"
-	"math/rand"
 	"strings"
-	"sync"
 	"time"
-	"wakelan/backend/comm"
-	"wakelan/backend/db"
 )
 
 type TokenInfo struct {
@@ -20,27 +16,26 @@ type TokenManager struct {
 	iv  []byte
 }
 
-func (tm *TokenManager) Init() {
-	tm.ChangeKey()
-	tm.iv = []byte("941CC9A12E47BF17")
-}
-
-func (tm *TokenManager) ChangeKey() {
-	cfg := db.DBOperObj().GetConfig()
-	if len(cfg.Secret) < 32 {
-		cfg.Secret += comm.GenUniqueKey()
+func (tm *TokenManager) Init(key []byte, iv []byte) bool {
+	if len(iv) < 16 {
+		return false
 	}
 
-	tm.key = []byte(cfg.Secret)[0:32]
+	tm.ChangeKey(key)
+	tm.iv = iv[0:16]
+
+	return false
+}
+
+func (tm *TokenManager) ChangeKey(key []byte) {
+	if len(key) < 32 {
+		key = append(key, []byte(GenUniqueKey())...)
+	}
+
+	tm.key = key[0:32]
 }
 
 func (tm *TokenManager) GenToken(minute int) (string, error) {
-	tokenBytes := make([]byte, 32)
-	_, err := rand.Read(tokenBytes)
-	if err != nil {
-		return "", err
-	}
-
 	info := TokenInfo{time.Now().Add(time.Duration(minute * int(time.Minute))).Unix()}
 
 	data, err := json.Marshal(info)
@@ -48,7 +43,7 @@ func (tm *TokenManager) GenToken(minute int) (string, error) {
 		return "", err
 	}
 
-	data, err = comm.AES_CBC_Seal(data, tm.key, tm.iv, comm.Zero)
+	data, err = AES_CBC_Seal(data, tm.key, tm.iv, Zero)
 	if err != nil {
 		return "", err
 	}
@@ -62,7 +57,7 @@ func (tm *TokenManager) VerifyToken(token string) bool {
 		return false
 	}
 
-	data, err = comm.AES_CBC_Open(data, tm.key, tm.iv)
+	data, err = AES_CBC_Open(data, tm.key, tm.iv)
 	if err != nil {
 		return false
 	}
@@ -80,16 +75,4 @@ func (tm *TokenManager) VerifyToken(token string) bool {
 	}
 
 	return true
-}
-
-var tokenManagerOnce sync.Once
-var tokenManagerObj *TokenManager
-
-func TokenTMObj() *TokenManager {
-	tokenManagerOnce.Do(func() {
-		tokenManagerObj = &TokenManager{}
-		tokenManagerObj.Init()
-	})
-
-	return tokenManagerObj
 }

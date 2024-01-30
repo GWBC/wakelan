@@ -20,6 +20,7 @@ import (
 
 type FileTransfer struct {
 	filecachePath string
+	fileSharedKey string
 }
 
 func (f *FileTransfer) Init() error {
@@ -31,21 +32,33 @@ func (f *FileTransfer) Init() error {
 
 	f.autoClean()
 
+	f.fileSharedKey = comm.GenRandKey()
+
 	return nil
 }
 
 func (f *FileTransfer) autoClean() {
 	go func() {
 		for {
-			t := time.Now()
-			datas := []db.FileMeta{}
 			dbObj := db.DBOperObj().GetDB()
-			dbObj.Find(&datas)
 
-			for _, data := range datas {
+			t := time.Now()
+			fileMetas := []db.FileMeta{}
+			dbObj.Find(&fileMetas)
+
+			for _, data := range fileMetas {
 				if t.Sub(data.CreatedAt) > 7*24*time.Hour {
 					dbObj.Delete(data)
 					os.Remove(path.Join(f.filecachePath, data.MD5))
+				}
+			}
+
+			messages := []db.Message{}
+			dbObj.Find(&messages)
+
+			for _, data := range messages {
+				if t.Sub(data.CreatedAt) > 7*24*time.Hour {
+					dbObj.Delete(data)
 				}
 			}
 
@@ -98,10 +111,10 @@ func (f *FileTransfer) GetFileMeta(c *gin.Context) {
 
 func (f *FileTransfer) Upload(c *gin.Context) {
 	meta := db.FileMeta{}
-	meta.MD5 = c.Request.FormValue("md5")
-	meta.Name = c.Request.FormValue("name")
-	meta.Size, _ = strconv.Atoi(c.Request.FormValue("size"))
-	meta.Index, _ = strconv.Atoi(c.Request.FormValue("index"))
+	meta.MD5 = c.PostForm("md5")
+	meta.Name = c.PostForm("name")
+	meta.Size, _ = strconv.Atoi(c.PostForm("size"))
+	meta.Index, _ = strconv.Atoi(c.PostForm("index"))
 	meta.CreatedAt = time.Now()
 
 	var err error
@@ -279,4 +292,99 @@ func (f *FileTransfer) Download(c *gin.Context) {
 		file.Seek(start, 0)
 		io.CopyN(c.Writer, file, contentLen)
 	}
+}
+
+func (f *FileTransfer) GenKey(c *gin.Context) {
+	key, err := FileSharedMG().GenToken(int(6 * time.Hour))
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err":   "",
+		"infos": key,
+	})
+}
+
+func (f *FileTransfer) Verify(c *gin.Context) {
+	key := c.Query("key")
+	if len(key) == 0 {
+		c.JSON(200, gin.H{
+			"err":   "无效key",
+			"infos": "",
+		})
+		return
+	}
+
+	if !FileSharedMG().VerifyToken(key) {
+		c.JSON(200, gin.H{
+			"err":   "无效key",
+			"infos": "",
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err": "",
+	})
+}
+
+//////////////////////////////////////////////////////////
+
+func (f *FileTransfer) GetMessage(c *gin.Context) {
+	dbObj := db.DBOperObj().GetDB()
+	msgs := []db.Message{}
+	res := dbObj.Order("id desc").Find(&msgs)
+	if res.Error != nil {
+		c.JSON(200, gin.H{
+			"err": res.Error.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err":   "",
+		"infos": msgs,
+	})
+}
+
+func (f *FileTransfer) AddMessage(c *gin.Context) {
+	msg := db.Message{}
+	c.ShouldBindJSON(&msg)
+
+	if len(msg.Msg) == 0 {
+		c.JSON(200, gin.H{
+			"err": "",
+		})
+
+		return
+	}
+
+	db.DBLog("消息", "%s", msg.Msg)
+
+	dbObj := db.DBOperObj().GetDB()
+	res := dbObj.Save(&msg)
+	if res.Error != nil {
+		c.JSON(200, gin.H{
+			"err": res.Error.Error(),
+		})
+		return
+	}
+
+	datas := struct {
+		db.Message
+		Time string `json:"time"`
+	}{
+		msg,
+		msg.CreatedAt.Format(comm.TimeFormat),
+	}
+
+	c.JSON(200, gin.H{
+		"err":   "",
+		"infos": datas,
+	})
 }

@@ -20,6 +20,8 @@ import (
 	"github.com/wxpusher/wxpusher-sdk-go/model"
 )
 
+const TimeFormat = "2006-01-02 15:04:05"
+
 func inc(ip net.IP) net.IP {
 	tip := make(net.IP, len(ip))
 	copy(tip, ip)

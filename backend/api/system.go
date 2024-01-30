@@ -138,9 +138,6 @@ func (r *System) SetConfig(c *gin.Context) {
 
 	db.DBOperObj().SwitchLogger()
 
-	//更新key
-	tokenManagerObj.ChangeKey()
-
 	c.JSON(200, gin.H{
 		"err":   "",
 		"infos": "",

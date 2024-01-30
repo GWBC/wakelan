@@ -60,7 +60,7 @@ func (l *Log) MarshalJSON() ([]byte, error) {
 		Time string `json:"time"`
 	}{
 		*l,
-		l.CreatedAt.Format("2006-01-02 15:04:05"),
+		l.CreatedAt.Format(comm.TimeFormat),
 	}
 
 	return json.Marshal(datas)
@@ -81,7 +81,25 @@ func (m *FileMeta) MarshalJSON() ([]byte, error) {
 		Time string `json:"time"`
 	}{
 		*m,
-		m.CreatedAt.Format("2006-01-02 15:04:05"),
+		m.CreatedAt.Format(comm.TimeFormat),
+	}
+
+	return json.Marshal(datas)
+}
+
+type Message struct {
+	gorm.Model
+	Msg string `gorm:"column:msg" json:"msg"`
+}
+
+// 处理json编码
+func (m *Message) MarshalJSON() ([]byte, error) {
+	datas := struct {
+		Message
+		Time string `json:"time"`
+	}{
+		*m,
+		m.CreatedAt.Format(comm.TimeFormat),
 	}
 
 	return json.Marshal(datas)
@@ -126,7 +144,7 @@ func (d *DBOper) Init() error {
 
 	d.db = db
 
-	db.AutoMigrate(&MacInfo{}, &GlobalInfo{}, &AttachInfo{}, &Log{}, &FileMeta{})
+	db.AutoMigrate(&MacInfo{}, &GlobalInfo{}, &AttachInfo{}, &Log{}, &FileMeta{}, &Message{})
 
 	d.SwitchLogger()
 	d.initData(db)

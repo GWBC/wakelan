@@ -5,7 +5,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+	"wakelan/backend/comm"
 	"wakelan/backend/db"
 
 	"github.com/gin-gonic/gin"
@@ -64,9 +66,44 @@ func (a *Web) SetFileAPI(r *gin.Engine) {
 	group.GET("/meta", api.GetFileMeta)
 	group.POST("/upload", api.Upload)
 	group.GET("/download", api.Download)
+	group.GET("/genkey", api.GenKey)
+	group.GET("/getMsg", api.GetMessage)
+	group.POST("/addMsg", api.AddMessage)
 }
 
-// ///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+
+var tokenManagerObj *comm.TokenManager
+var tokenManagerOnce sync.Once
+
+func TokenManager() *comm.TokenManager {
+	tokenManagerOnce.Do(func() {
+		obj := &comm.TokenManager{}
+
+		cfg := db.DBOperObj().GetConfig()
+		obj.Init([]byte(cfg.Secret), []byte("9C1A64F21B7B6A82"))
+		tokenManagerObj = obj
+	})
+
+	return tokenManagerObj
+}
+
+var fileSharedObj *comm.TokenManager
+var fileSharedOnce sync.Once
+
+func FileSharedMG() *comm.TokenManager {
+	fileSharedOnce.Do(func() {
+		obj := &comm.TokenManager{}
+		key := comm.GenRandKey()
+		obj.Init([]byte(key), []byte(key)[0:16])
+		fileSharedObj = obj
+	})
+
+	return fileSharedObj
+}
+
+///////////////////////////////////////////////////////////////////
+
 func (a *Web) Login(r *gin.Engine) {
 	api := r.Group("/api")
 	api.GET("/login", func(c *gin.Context) {
@@ -86,7 +123,7 @@ func (a *Web) Login(r *gin.Engine) {
 		}
 
 		minute := 7 * 24 * 60
-		token, err := TokenTMObj().GenToken(minute)
+		token, err := TokenManager().GenToken(minute)
 		if err != nil {
 			db.DBLog("登录", "登录失败, key:%s, err:%s", code, err.Error())
 			c.JSON(200, gin.H{
@@ -149,6 +186,33 @@ func CORSMiddleware() gin.HandlerFunc {
 	}
 }
 
+// 处理文件共享，返回是否处理
+func (a *Web) ProcFileShared(c *gin.Context) bool {
+	if strings.Contains(c.FullPath(), "/api/file") {
+		if strings.Contains(c.FullPath(), "/api/file/genkey") {
+			return false
+		}
+
+		key := c.Query("key")
+		if len(key) == 0 {
+			return false
+		}
+
+		if !FileSharedMG().VerifyToken(key) {
+			c.JSON(200, gin.H{
+				"err": "无效 key",
+			})
+			c.Abort()
+			return true
+		}
+
+		c.Next()
+		return true
+	}
+
+	return false
+}
+
 func (a *Web) CheckToken() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !strings.Contains(c.FullPath(), "/api/") {
@@ -156,17 +220,20 @@ func (a *Web) CheckToken() gin.HandlerFunc {
 			return
 		}
 
+		if a.ProcFileShared(c) {
+			return
+		}
+
 		token, err := c.Cookie("token")
 		if err != nil || token == "" {
 			c.JSON(200, gin.H{
-				"err":   "token 无效",
-				"infos": "",
+				"err": "token 无效",
 			})
 			c.Abort()
 			return
 		}
 
-		if TokenTMObj().VerifyToken(token) {
+		if TokenManager().VerifyToken(token) {
 			c.Next()
 		} else {
 			c.JSON(200, gin.H{
