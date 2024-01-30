@@ -454,7 +454,7 @@ onMounted(() => {
 .upload_container {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: calc(100% - 10px);
 }
 
 .upload-card {
@@ -473,7 +473,7 @@ onMounted(() => {
 }
 
 .upload-process {
-    height: 97%;
+    height: calc(100% - 20px);
 }
 
 .qrcode_container {
@@ -485,7 +485,7 @@ onMounted(() => {
 .right_container {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: calc(100% - 10px);
 }
 
 .shared_link {
@@ -507,7 +507,7 @@ onMounted(() => {
 .message_container {
     display: flex;
     flex-direction: column;
-    height: 98%;
+    height: calc(100% - 20px);
 }
 
 .message_table {

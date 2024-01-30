@@ -49,10 +49,9 @@
       </el-row>
     </template>
     <template #main>
-      <el-card ref="table_ref" class="wakelan_card">
-        <el-table class="disable-text-selection" :height="table_height"
-          element-loading-background="rgba(255, 255, 255, 20)" v-loading="table_loading" :data="table_data_filter" stripe
-          @row-dblclick="onOpenRemote" style="width: 100%" empty-text=" "
+      <el-card class="wakelan_card" body-class="wakelan_card_body">
+        <el-table class="wakelan_table disable-text-selection" element-loading-background="rgba(255, 255, 255, 20)"
+          v-loading="table_loading" :data="table_data_filter" stripe @row-dblclick="onOpenRemote" empty-text=" "
           :default-sort="{ prop: 'ip', order: 'ascending' }" @sort-change="customSort">
           <el-table-column width="48">
             <template #default="scope">
@@ -160,7 +159,6 @@ interface WebsocketInfo {
   conn_timer: number
 }
 
-const table_ref = ref()
 const table_height = ref(0)
 const table_loading = ref(false)
 const table_data = ref<PCInfo[]>([])
@@ -182,7 +180,6 @@ const addPCInfoDlgShow = ref(false)
 const addPCInfoDlgData = ref<PCInfo>({} as PCInfo)
 
 const group: string = 'api/wake/'
-let resizeObserver: ResizeObserver | null = null
 
 const websocket: WebsocketInfo = { s: null, conn_timer: 0 }
 
@@ -323,14 +320,6 @@ function uninitWebsocket() {
     websocket.s.close()
     websocket.s = null
   }
-}
-
-function initObserverSize() {
-  resizeObserver = new ResizeObserver(entries => {
-    table_height.value = table_ref.value.$el.offsetHeight
-  })
-
-  resizeObserver.observe(table_ref.value.$el)
 }
 
 function getData(isAes: number, showLoading: boolean = true): Promise<boolean> {
@@ -575,7 +564,6 @@ function getRemoteRandKey() {
 
 onMounted(function () {
   initWebsocket()
-  initObserverSize()
   getNetcardSelect().then(ret => {
     getNetCard().then(ret => {
       getRemoteRandKey().then(ret => {
@@ -587,13 +575,22 @@ onMounted(function () {
 
 onUnmounted(function () {
   uninitWebsocket()
-  resizeObserver!.disconnect()
 })
 </script>
 
+<style>
+.wakelan_card_body {
+  height: calc(100% - 20px);
+}
+</style>
+
 <style scoped>
 .wakelan_card {
+  height: calc(100% - 20px);
   margin: 10px 20px 0px 20px;
-  height: 98%;
+}
+
+.wakelan_table {
+  height: 100%;
 }
 </style>
