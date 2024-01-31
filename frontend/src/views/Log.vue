@@ -2,7 +2,7 @@
     <MainPage>
         <template #header />
         <template #main>
-            <el-card class="log-card" body-class="log-card-body">
+            <el-card class="log-card" body-class="v_flex" body-style="height: calc(100% - 15px)">
                 <el-table class="log_table" :data="table_data" empty-text=" " stripe v-loading="table_loading">
                     <el-table-column prop="time" label="时间" width="180" />
                     <el-table-column prop="cmd" label="动作" width="180" />
@@ -76,16 +76,7 @@ onMounted(function () {
     initTotal()
     getData(1)
 })
-
 </script>
-
-<style>
-.log-card-body {
-    display: flex;
-    flex-direction: column;
-    height: calc(100% - 15px);
-}
-</style>
 
 <style scoped>
 .log-card {
