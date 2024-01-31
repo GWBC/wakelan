@@ -2,15 +2,16 @@
     <MainPage>
         <template #header />
         <template #main>
-            <el-card class="log-card" body-class="v_flex" body-style="height: calc(100% - 15px)">
-                <el-table class="log_table" :data="table_data" empty-text=" " stripe v-loading="table_loading">
+            <el-card style="margin: 10px 20px 0px 20px; height: calc(100% - 20px);" body-class="v_flex"
+                body-style="height: calc(100% - 15px)">
+                <el-table style="flex: 1;" :data="table_data" empty-text=" " stripe v-loading="table_loading">
                     <el-table-column prop="time" label="时间" width="180" />
                     <el-table-column prop="cmd" label="动作" width="180" />
                     <el-table-column prop="msg" label="信息" />
                 </el-table>
-                <el-pagination class="page" :page-sizes="[18, 40, 80, 100]" layout="total, sizes, prev, pager, next, jumper"
-                    background :total="total" :default-page-size="pageSize" @current-change="Change"
-                    @size-change="SizeChange">
+                <el-pagination style="margin: 10px 0px 10px 10px;" :page-sizes="[18, 40, 80, 100]"
+                    layout="total, sizes, prev, pager, next, jumper" background :total="total" :default-page-size="pageSize"
+                    @current-change="Change" @size-change="SizeChange">
                 </el-pagination>
             </el-card>
         </template>
@@ -77,19 +78,3 @@ onMounted(function () {
     getData(1)
 })
 </script>
-
-<style scoped>
-.log-card {
-    margin: 10px 20px 0px 20px;
-    height: calc(100% - 20px);
-}
-
-.log_table {
-    flex: 1;
-}
-
-.page {
-    margin: 10px 0px 10px 10px;
-}
-</style>
- 
