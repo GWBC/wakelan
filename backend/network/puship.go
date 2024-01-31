@@ -28,6 +28,8 @@ func (p *PushIP) Start(second int) error {
 			info := db.DBOperObj().GetConfig()
 			p.ip = comm.GetGlobalIP()
 
+			fmt.Printf("当前地址：%s，老地址：%s", p.ip, info.IP)
+
 			if len(p.ip) != 0 {
 				if !strings.EqualFold(p.ip, info.IP) {
 					msg := fmt.Sprintf("当前地址：%s", p.ip)

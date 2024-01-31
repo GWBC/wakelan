@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/wxpusher/wxpusher-sdk-go"
 	"github.com/wxpusher/wxpusher-sdk-go/model"
@@ -92,26 +93,41 @@ func WakeLan(mac string) error {
 	return nil
 }
 
-func GetGlobalIP() string {
-	req, err := http.NewRequest("GET", "https://ipinfo.io/ip", nil)
+func GetHttp(url string, headers *map[string]string) ([]byte, error) {
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return ""
+		return []byte{}, err
 	}
 
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0")
 
-	client := &http.Client{}
-	rsp, err := client.Do(req)
+	if headers != nil {
+		for k, v := range *headers {
+			req.Header.Set(k, v)
+		}
+	}
 
-	if err != nil || rsp.StatusCode != http.StatusOK {
-		return ""
+	client := http.Client{
+		Timeout: 6 * time.Second,
+	}
+	rsp, err := client.Do(req)
+	if err != nil {
+		return []byte{}, err
 	}
 
 	defer rsp.Body.Close()
 
-	buf, err := io.ReadAll(rsp.Body)
+	if rsp.StatusCode != http.StatusOK {
+		return []byte{}, fmt.Errorf("http status code:%d", rsp.StatusCode)
+	}
+
+	return io.ReadAll(rsp.Body)
+}
+
+func GetGlobalIP() string {
+	buf, err := GetHttp("https://ipinfo.io/ip", nil)
 	if err != nil {
-		return ""
+		return string(buf)
 	}
 
 	return string(buf)
@@ -119,15 +135,9 @@ func GetGlobalIP() string {
 
 func AYFFPushMsg(msg string, token string) error {
 	apiUrl := fmt.Sprintf("https://iyuu.cn/%s.send?text=%s", token, url.QueryEscape(msg))
-	rsp, err := http.Get(apiUrl)
+	_, err := GetHttp(apiUrl, nil)
 	if err != nil {
 		return err
-	}
-
-	defer rsp.Body.Close()
-
-	if rsp.StatusCode != http.StatusOK {
-		return fmt.Errorf("http status code:%d", rsp.StatusCode)
 	}
 
 	return nil
