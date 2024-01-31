@@ -1,6 +1,7 @@
 package network
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -17,7 +18,13 @@ func (p *PushIP) Start(second int) error {
 	dbObj := db.DBOperObj().GetDB()
 
 	go func() {
+		if second < 60 {
+			second = 60
+		}
+
 		for {
+			time.Sleep(time.Duration(second) * time.Second)
+
 			info := db.DBOperObj().GetConfig()
 			p.ip = comm.GetGlobalIP()
 
@@ -29,20 +36,22 @@ func (p *PushIP) Start(second int) error {
 						continue
 					}
 
-					info.IP = p.ip
-					dbObj.Select("ip").Save(info)
+					err := errors.New("no match")
 
 					if len(info.AYFFToken) != 0 {
-						go comm.AYFFPushMsg(msg, info.AYFFToken)
+						err = comm.AYFFPushMsg(msg, info.AYFFToken)
 					}
 
 					if len(info.WXPusherToken) != 0 && info.WXPusherTopicId != 0 {
-						go comm.WXPusherMsg(msg, info.WXPusherToken, info.WXPusherTopicId)
+						err = comm.WXPusherMsg(msg, info.WXPusherToken, info.WXPusherTopicId)
+					}
+
+					if err == nil {
+						info.IP = p.ip
+						dbObj.Select("ip").Save(info)
 					}
 				}
 			}
-
-			time.Sleep(time.Duration(second) * time.Second)
 		}
 	}()
 

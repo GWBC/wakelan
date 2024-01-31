@@ -93,24 +93,28 @@ func WakeLan(mac string) error {
 }
 
 func GetGlobalIP() string {
-	rsp, err := http.Get("https://ipinfo.io/ip")
+	req, err := http.NewRequest("GET", "https://ipinfo.io/ip", nil)
 	if err != nil {
+		return ""
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0")
+
+	client := &http.Client{}
+	rsp, err := client.Do(req)
+
+	if err != nil || rsp.StatusCode != http.StatusOK {
 		return ""
 	}
 
 	defer rsp.Body.Close()
 
-	if rsp.StatusCode != http.StatusOK {
-		return ""
-	}
-
-	buf := bytes.NewBuffer(nil)
-	_, err = io.Copy(buf, rsp.Body)
+	buf, err := io.ReadAll(rsp.Body)
 	if err != nil {
 		return ""
 	}
 
-	return buf.String()
+	return string(buf)
 }
 
 func AYFFPushMsg(msg string, token string) error {
