@@ -15,6 +15,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/wxpusher/wxpusher-sdk-go"
@@ -124,13 +126,27 @@ func GetHttp(url string, headers *map[string]string) ([]byte, error) {
 	return io.ReadAll(rsp.Body)
 }
 
-func GetGlobalIP() string {
-	buf, err := GetHttp("https://ipinfo.io/ip", nil)
-	if err != nil {
-		return string(buf)
+func GetGlobalIP(url string) string {
+	urls := strings.Split(url, ";")
+
+	for _, v := range urls {
+		if len(v) == 0 {
+			continue
+		}
+		buf, err := GetHttp(v, nil)
+		if err == nil {
+			pattern := `(\d+\.\d+\.\d+\.\d+)`
+			re := regexp.MustCompile(pattern)
+			ip := re.FindString(string(buf))
+			if len(ip) == 0 {
+				continue
+			}
+
+			return ip
+		}
 	}
 
-	return string(buf)
+	return ""
 }
 
 func AYFFPushMsg(msg string, token string) error {

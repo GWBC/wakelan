@@ -46,6 +46,8 @@ type GlobalInfo struct {
 
 	Debug       bool `gorm:"column:debug" json:"debug"`
 	SharedLimit int  `gorm:"column:shared_limit;default:7" json:"shared_limit"`
+
+	CheckIPAddr string `gorm:"column:check_ip_addr;default:http://ddns.oray.com/checkip;https://ipinfo.io/ip;" json:"check_ip_addr"`
 }
 
 type Log struct {

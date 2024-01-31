@@ -79,7 +79,6 @@ var tokenManagerOnce sync.Once
 func TokenManager() *comm.TokenManager {
 	tokenManagerOnce.Do(func() {
 		obj := &comm.TokenManager{}
-
 		cfg := db.DBOperObj().GetConfig()
 		obj.Init([]byte(cfg.Secret), []byte("9C1A64F21B7B6A82"))
 		tokenManagerObj = obj

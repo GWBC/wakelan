@@ -26,7 +26,7 @@ func (p *PushIP) Start(second int) error {
 			time.Sleep(time.Duration(second) * time.Second)
 
 			info := db.DBOperObj().GetConfig()
-			p.ip = comm.GetGlobalIP()
+			p.ip = comm.GetGlobalIP(info.CheckIPAddr)
 
 			fmt.Printf("当前地址：%s，老地址：%s", p.ip, info.IP)
 

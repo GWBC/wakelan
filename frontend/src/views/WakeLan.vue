@@ -129,6 +129,7 @@ import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { RemoteType } from '@/lib/guacd/client'
 import type { RemoteConfigInfo } from '@/lib/guacd/client'
 import MainPage from '@/components/MainPage.vue'
+import router from '@/router'
 
 interface AttachInfo {
   mac: string
@@ -180,7 +181,8 @@ const addPCInfoDlgData = ref<PCInfo>({} as PCInfo)
 
 const group: string = 'api/wake/'
 
-const websocket: WebsocketInfo = { s: null, conn_timer: 0 }
+let wsReconnCount = 0
+let websocket: WebsocketInfo = { s: null, conn_timer: 0 }
 
 const table_data_filter = computed(() => {
   try {
@@ -277,6 +279,9 @@ function wsOpen(event: Event) {
 }
 
 function wsMsg(event: MessageEvent) {
+  //重置重连次数
+  wsReconnCount = 0
+
   let a = event.data.toString().split(",")
   for (let i = 0; i < table_data.value.length; ++i) {
     if (table_data.value[i].mac == a[1]) {
@@ -291,8 +296,16 @@ function wsError(event: Event) {
 
 function wsClose(event: Event) {
   websocket.conn_timer = setTimeout(() => {
-    initWebsocket()
-  }, 3000)
+    wsReconnCount++
+    if (wsReconnCount > 10) {
+      ElMessage.error("Websocket 重连超过限制，退出到登录页面")
+      setTimeout(() => {
+        router.push("/login")
+      }, 6000)
+    } else {
+      initWebsocket()
+    }
+  }, 6000)
 }
 
 function initWebsocket() {

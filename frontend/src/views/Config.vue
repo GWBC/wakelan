@@ -4,6 +4,12 @@
         <template #main>
             <el-card class="cfg_card">
                 <el-form class="cfg" label-position="left" label-width="100px" :model="formData">
+                    <el-form-item label="公网地址">
+                        <el-input v-model="formData.ip" readonly/>
+                    </el-form-item>
+                    <el-form-item label="获取公网地址">
+                        <el-input v-model="formData.check_ip_addr" />
+                    </el-form-item>
                     <el-form-item label="Guacd主机">
                         <el-input v-model="formData.guacd_host" />
                     </el-form-item>
@@ -13,12 +19,12 @@
                     <el-form-item label="爱语飞飞">
                         <el-input v-model="formData.ayff_token" />
                     </el-form-item>
-                    <el-form-item label="微信推送">
+                    <!-- <el-form-item label="微信推送">
                         <el-input v-model="formData.wxpusher_token" />
                     </el-form-item>
                     <el-form-item label="微信推送主题">
                         <el-input v-model.number="formData.wxpusher_topicid" />
-                    </el-form-item>
+                    </el-form-item> -->
                     <el-form-item label="分享时限">
                         <el-select v-model.number="formData.shared_limit" placeholder="文件、消息分享保留天数">
                             <el-option label="1天" :value="1">1天</el-option>
@@ -70,6 +76,8 @@ interface GuacdInfo {
     wxpusher_token: string
     wxpusher_topicid: number
     shared_limit: number
+    check_ip_addr: string
+    ip: string
 }
 
 const formData = ref<GuacdInfo>({
@@ -82,6 +90,8 @@ const formData = ref<GuacdInfo>({
     wxpusher_token: '',
     wxpusher_topicid: 0,
     shared_limit: 7,
+    check_ip_addr: '',
+    ip: '',
 })
 
 const group: string = 'api/system/'

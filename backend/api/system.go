@@ -17,6 +17,7 @@ type DynamicPassword struct {
 }
 
 type ConfigInfo struct {
+	IP        string `gorm:"column:ip" json:"ip"`
 	GuacdHost string `gorm:"column:guacd_host"  json:"guacd_host"`
 	GuacdPort int    `gorm:"column:guacd_port"  json:"guacd_port"`
 	AuthURL   string `gorm:"column:auth_url"  json:"auth_url"`
@@ -28,6 +29,8 @@ type ConfigInfo struct {
 
 	Debug       bool `gorm:"column:debug" json:"debug"`
 	SharedLimit int  `gorm:"column:shared_limit" json:"shared_limit"`
+
+	CheckIPAddr string `gorm:"column:check_ip_addr;" json:"check_ip_addr"`
 }
 
 type System struct {
@@ -91,21 +94,24 @@ func (r *System) GetConfigInfo(c *gin.Context) {
 	dbObj := db.DBOperObj().GetDB()
 	dbObj.Find(info)
 
-	guacdInfo := ConfigInfo{}
-	guacdInfo.GuacdHost = info.GuacdHost
-	guacdInfo.GuacdPort = info.GuacdPort
-	guacdInfo.AuthURL = info.AuthURL
-	guacdInfo.Secret = info.Secret
-	guacdInfo.AYFFToken = info.AYFFToken
-	guacdInfo.WXPusherToken = info.WXPusherToken
-	guacdInfo.WXPusherTopicId = info.WXPusherTopicId
+	cfg := ConfigInfo{}
+	cfg.IP = info.IP
+	cfg.GuacdHost = info.GuacdHost
+	cfg.GuacdPort = info.GuacdPort
+	cfg.AuthURL = info.AuthURL
+	cfg.Secret = info.Secret
+	cfg.AYFFToken = info.AYFFToken
+	cfg.WXPusherToken = info.WXPusherToken
+	cfg.WXPusherTopicId = info.WXPusherTopicId
 
-	guacdInfo.Debug = info.Debug
-	guacdInfo.SharedLimit = info.SharedLimit
+	cfg.Debug = info.Debug
+	cfg.SharedLimit = info.SharedLimit
+
+	cfg.CheckIPAddr = info.CheckIPAddr
 
 	c.JSON(200, gin.H{
 		"err":   "",
-		"infos": guacdInfo,
+		"infos": cfg,
 	})
 }
 
@@ -135,10 +141,11 @@ func (r *System) SetConfig(c *gin.Context) {
 	cfg.AYFFToken = cfgInfo.AYFFToken
 	cfg.WXPusherToken = cfgInfo.WXPusherToken
 	cfg.WXPusherTopicId = cfgInfo.WXPusherTopicId
+	cfg.CheckIPAddr = cfgInfo.CheckIPAddr
 
 	dbObj.Select("guacd_host", "guacd_port", "auth_url", "secret",
 		"ayff_token", "wxpusher_token", "wxpusher_topicid",
-		"debug", "shared_limit").Save(cfg)
+		"debug", "shared_limit", "check_ip_addr").Save(cfg)
 
 	db.DBOperObj().SwitchLogger()
 
