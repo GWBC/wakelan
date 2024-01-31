@@ -1,56 +1,75 @@
 <template>
-    <el-dialog v-model="qrcodeShow">
-        <div class="qrcode_container">
-            <qrcode-vue :value="sharedInfo.path" :size="400" />
-        </div>
-    </el-dialog>
-    <el-container class="sub-container">
-        <el-aside width="50%">
-            <div class="upload_container">
-                <el-card class="upload-card">
-                    <el-upload ref="uploadObj" class="upload" :show-file-list=true drag action="/api/file/upload"
-                        :http-request="upload" :before-remove="remove" multiple>
-                        <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-                        <div class="el-upload__text">
-                            将文件放到这里或 <em>点击上传</em>
-                        </div>
-                    </el-upload>
-                </el-card>
-
-                <el-card class="upload-process-card" body-class="full-height">
-                    <el-table class="upload-process" :data="metaDatas" empty-text=" " stripe>
-                        <el-table-column prop="time" label="时间" min-width="100" />
-                        <el-table-column prop="name" label="文件名" min-width="200" />
-                        <el-table-column label="进度" min-width="100">
-                            <template #default="scope">
-                                <el-tag class="tag" v-if="scope.row.index == scope.row.size" type="success"
-                                    effect="dark">100%</el-tag>
-                                <el-tag class="tag" v-else type="info" effect="dark">{{ Math.floor(100 * (scope.row.index /
-                                    scope.row.size)) }}%</el-tag>
-                            </template>
-                        </el-table-column>
-                        <el-table-column fixed="right" label="操作" min-width="100">
-                            <template #default="scope">
-                                <el-row>
-                                    <el-col :span="8">
-                                        <el-button class="button" v-if="scope.row.index != scope.row.size" disabled
-                                            size="small" type="info">下载</el-button>
-                                        <el-button class="button" v-else size="small" type="warning"
-                                            @click="download(scope.row)">下载</el-button>
-                                    </el-col>
-                                </el-row>
-                            </template>
-                        </el-table-column>
-                    </el-table>
-                </el-card>
-            </div>
-        </el-aside>
-        <el-main class="wakelan-main">
-            <div class="right_container">
-                <el-card v-if="sharedKey.length == 0" class="addr_shared">
-                    <el-text class="shared_link" truncated>
-                        分享链接：<a :href="sharedInfo.path" target="_blank">{{ sharedInfo.path }}</a>
-                    </el-text>
+    <el-tabs v-model="actionName" class="v_flex" style="height: calc(100% - 32px); margin: 10px 20px 20px 20px"
+        type="border-card">
+        <el-tab-pane class="v_flex" style="height: 100%;" label="文件中转" name="文件中转">
+            <el-card style="flex:3;margin-bottom: 10px;">
+                <el-upload ref="uploadObj" :show-file-list=true drag action="/api/file/upload" :http-request="upload"
+                    :before-remove="remove" multiple>
+                    <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+                    <div class="el-upload__text">
+                        将文件放到这里或 <em>点击上传</em>
+                    </div>
+                </el-upload>
+            </el-card>
+            <el-card style="flex:5" body-class="full-height">
+                <el-table style="height: calc(100% - 20px);" :data="metaDatas" empty-text=" " stripe>
+                    <el-table-column prop="time" label="时间" min-width="100" />
+                    <el-table-column prop="name" label="文件名" min-width="200" />
+                    <el-table-column label="进度" min-width="100">
+                        <template #default="scope">
+                            <el-tag style="width: 60px;" v-if="scope.row.index == scope.row.size" type="success"
+                                effect="dark">100%</el-tag>
+                            <el-tag v-else type="info" style="width: 60px;" effect="dark">{{ Math.floor(100 *
+                                (scope.row.index / scope.row.size)) }}%</el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column fixed="right" label="操作" min-width="100">
+                        <template #default="scope">
+                            <el-row>
+                                <el-col :span="8">
+                                    <el-button class="button" v-if="scope.row.index != scope.row.size" disabled size="small"
+                                        type="info">下载</el-button>
+                                    <el-button class="button" v-else size="small" type="warning"
+                                        @click="download(scope.row)">下载</el-button>
+                                </el-col>
+                            </el-row>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </el-card>
+        </el-tab-pane>
+        <el-tab-pane class="v_flex" style="height: 100%;" label="消息中转" name="消息中转">
+            <el-card style="height: 100%;" body-class="full-height v_flex" body-style="height: calc(100% - 20px)">
+                <el-input v-model="msgData" :rows="3" type="textarea" @keydown.enter.prevent="sendMsg"
+                    placeholder="请输入消息，按回车发送消息" />
+                <el-table :data="msgDatas" style="flex:1" empty-text=" " stripe>
+                    <el-table-column label="时间" prop="time"></el-table-column>
+                    <el-table-column label="消息">
+                        <template #default="scope">
+                            <el-text truncated>
+                                {{ scope.row.msg }}
+                            </el-text>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="操作" fixed="right" min-width="100px">
+                        <template #default="scope">
+                            <el-button type="success" size="small" @click="msgCopy(scope.row)">复制</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </el-card>
+        </el-tab-pane>
+        <el-tab-pane v-if="sharedKey.length == 0" label="链接分享" name="链接分享">
+            <el-dialog v-model="qrcodeShow">
+                <div class="center">
+                    <qrcode-vue :value="sharedInfo.path" :size="400" />
+                </div>
+            </el-dialog>
+            <el-card>
+                <el-text truncated>
+                    分享链接：<a :href="sharedInfo.path" target="_blank">{{ sharedInfo.path }}</a>
+                </el-text>
+                <div style="margin-top: 5px;">
                     <el-button style="padding: 0px;" link :icon="DocumentCopy" @click="sharedCopy">复制</el-button>
                     <el-button style="padding: 0px;" link @click="shardQRCode">
                         <svg style="width: 16px; height: 16px; margin-right: 5px;" xmlns="http://www.w3.org/2000/svg"
@@ -72,33 +91,10 @@
                         </svg>
                         二维码
                     </el-button>
-                </el-card>
-                <el-card class="message" body-class="full-height">
-                    <div class="message_container">
-                        <el-input v-model="msgData" :rows="3" type="textarea" @keydown.enter.prevent="sendMsg"
-                            placeholder="请输入消息，按回车发送消息" />
-                        <el-table :data="msgDatas" class="message_table" empty-text=" " stripe>
-                            <el-table-column label="时间" prop="time"></el-table-column>
-                            <el-table-column label="消息">
-                                <template #default="scope">
-                                    <el-text truncated>
-                                        {{ scope.row.msg }}
-                                    </el-text>
-                                </template>
-                            </el-table-column>
-                            <el-table-column label="操作" fixed="right" min-width="100px">
-                                <template #default="scope">
-                                    <el-button type="success" size="small" @click="msgCopy(scope.row)">复制</el-button>
-                                </template>
-                            </el-table-column>
-                        </el-table>
-                    </div>
-
-                </el-card>
-
-            </div>
-        </el-main>
-    </el-container>
+                </div>
+            </el-card>
+        </el-tab-pane>
+    </el-tabs>
 </template>
 
 <script setup lang="ts">
@@ -177,6 +173,8 @@ const msgDatas = ref<Message[]>()
 
 const sharedKey = ref('')
 const qrcodeShow = ref(false)
+
+const actionName = ref('文件中转')
 
 let group = "/api/file"
 let fileUpload = new Map()
@@ -270,8 +268,8 @@ function sendMsg() {
     })
 }
 
-function msgCopy(msg:Message){
-    SetLocalClipboard(msg.msg).then(()=>{
+function msgCopy(msg: Message) {
+    SetLocalClipboard(msg.msg).then(() => {
         ElMessage.success("复制消息成功")
     }).catch(err => {
         ElMessage.error(`复制消息失败，${err.toString()}`)
@@ -435,83 +433,4 @@ onMounted(() => {
         })
     }
 })
-
 </script>
-
-<style scoped>
-.tag {
-    width: 60px;
-}
-
-.button {
-    width: 60px;
-}
-
-.sub-container {
-    height: 100%;
-}
-
-.upload_container {
-    display: flex;
-    flex-direction: column;
-    height: calc(100% - 10px);
-}
-
-.upload-card {
-    flex: 4;
-    margin: 10px 20px 0px 20px;
-}
-
-.upload {
-    height: 100%;
-}
-
-.upload-process-card {
-    flex: 5;
-    margin: 10px 20px 0px 20px;
-
-}
-
-.upload-process {
-    height: calc(100% - 20px);
-}
-
-.qrcode_container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.right_container {
-    display: flex;
-    flex-direction: column;
-    height: calc(100% - 10px);
-}
-
-.shared_link {
-    display: block;
-    margin-bottom: 8px;
-}
-
-.addr_shared {
-    min-width: 200px;
-    margin: 10px 20px 0px 20px;
-}
-
-.message {
-    flex: 1;
-    min-width: 200px;
-    margin: 10px 20px 0px 20px;
-}
-
-.message_container {
-    display: flex;
-    flex-direction: column;
-    height: calc(100% - 20px);
-}
-
-.message_table {
-    flex: 1;
-    margin-top: 20px;
-}
-</style>

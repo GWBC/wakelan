@@ -1,6 +1,6 @@
 <template>
-    <div class="login_main">
-        <el-card class="login_card">
+    <div class="center" style="height: 100%;">
+        <el-card class="center" style=" width: 650px; height: 300px;">
             <el-form class="login" label-position="right" label-width="100px" :model="formData">
                 <el-form-item label="密钥">
                     <el-input ref="code" placeholder="请输入密钥" @keydown.enter.prevent="onLogin" v-model="formData.code" />
@@ -42,21 +42,6 @@ onMounted(function () {
 <style scoped>
 .btn {
     margin-left: auto;
-}
-
-.login_main {
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.login_card {
-    width: 650px;
-    height: 300px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .login {

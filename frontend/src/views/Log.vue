@@ -89,8 +89,8 @@ onMounted(function () {
 
 <style scoped>
 .log-card {
-    margin: 0px 20px 0px 20px;
-    height: calc(100% - 10px);
+    margin: 10px 20px 0px 20px;
+    height: calc(100% - 20px);
 }
 
 .log_table {

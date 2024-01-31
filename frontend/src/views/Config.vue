@@ -21,10 +21,10 @@
                     </el-form-item>
                     <el-form-item label="分享时限">
                         <el-select v-model.number="formData.shared_limit" placeholder="文件、消息分享保留天数">
-                          <el-option label="1天" :value="1">1天</el-option>
-                          <el-option label="3天" :value="3">3天</el-option>
-                          <el-option label="7天" :value="7">7天</el-option>
-                          <el-option label="15天" :value="15">15天</el-option>
+                            <el-option label="1天" :value="1">1天</el-option>
+                            <el-option label="3天" :value="3">3天</el-option>
+                            <el-option label="7天" :value="7">7天</el-option>
+                            <el-option label="15天" :value="15">15天</el-option>
                         </el-select>
                     </el-form-item>
                     <el-form-item label="调试模式">
