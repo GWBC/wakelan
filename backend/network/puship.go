@@ -17,6 +17,8 @@ type PushIP struct {
 func (p *PushIP) Start(second int) error {
 	dbObj := db.DBOperObj().GetDB()
 
+	isPrintLog := false
+
 	go func() {
 		if second < 60 {
 			second = 60
@@ -28,14 +30,16 @@ func (p *PushIP) Start(second int) error {
 			info := db.DBOperObj().GetConfig()
 			p.ip = comm.GetGlobalIP(info.CheckIPAddr)
 
-			fmt.Printf("当前地址：%s，老地址：%s", p.ip, info.IP)
-
 			if len(p.ip) != 0 {
 				if !strings.EqualFold(p.ip, info.IP) {
 					msg := fmt.Sprintf("当前地址：%s", p.ip)
 
 					if len(info.AYFFToken) == 0 && len(info.WXPusherToken) == 0 {
 						continue
+					}
+
+					if !isPrintLog {
+						db.DBLog("消息推送", "公网IP %s", p.ip)
 					}
 
 					err := errors.New("no match")
@@ -48,10 +52,19 @@ func (p *PushIP) Start(second int) error {
 						err = comm.WXPusherMsg(msg, info.WXPusherToken, info.WXPusherTopicId)
 					}
 
-					if err == nil {
-						info.IP = p.ip
-						dbObj.Select("ip").Save(info)
+					if err != nil {
+						isPrintLog = true
+						db.DBLog("消息推送", "推送失败 %s", err.Error())
 					}
+
+					info.IP = p.ip
+					dbObj.Select("ip").Save(info)
+					isPrintLog = false
+				}
+			} else {
+				if !isPrintLog {
+					isPrintLog = true
+					db.DBLog("消息推送", "公网IP获取失败")
 				}
 			}
 		}
