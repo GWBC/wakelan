@@ -24,7 +24,7 @@ func (p *PushIP) Start(second int) error {
 	dbObj := db.DBOperObj().GetDB()
 
 	go func() {
-		waitTime := 1 //初次等待时间为1秒
+		waitTime := 20 //初次等待时间为20秒，不能太短，崩溃拉起后过于频繁
 
 		for {
 			time.Sleep(time.Duration(waitTime) * time.Second)
