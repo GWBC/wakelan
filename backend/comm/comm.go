@@ -6,6 +6,7 @@ import (
 	"crypto/cipher"
 	"crypto/md5"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -111,6 +112,9 @@ func GetHttp(url string, headers *map[string]string) ([]byte, error) {
 
 	client := http.Client{
 		Timeout: 6 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
 	}
 	rsp, err := client.Do(req)
 	if err != nil {
