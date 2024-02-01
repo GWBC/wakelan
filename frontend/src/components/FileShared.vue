@@ -53,7 +53,7 @@
                     </el-table-column>
                     <el-table-column label="操作" fixed="right" min-width="100px">
                         <template #default="scope">
-                            <el-button type="success" size="small" @click="msgCopy(scope.row)">复制</el-button>
+                            <el-button class="down_btn" type="success" size="small" @click="msgCopy(scope.row)">复制</el-button>
                         </template>
                     </el-table-column>
                 </el-table>

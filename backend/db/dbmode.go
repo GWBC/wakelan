@@ -1,7 +1,9 @@
 package db
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -75,6 +77,8 @@ type FileMeta struct {
 	Size      int    `gorm:"column:size" json:"size"`
 	Index     int    `gorm:"column:index" json:"index"`
 	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 // 处理json编码
@@ -109,7 +113,8 @@ func (m *Message) MarshalJSON() ([]byte, error) {
 }
 
 type DBOper struct {
-	db *gorm.DB
+	db    *gorm.DB
+	level logger.LogLevel
 }
 
 func (d *DBOper) initData(db *gorm.DB) {
@@ -146,6 +151,8 @@ func (d *DBOper) Init() error {
 	}
 
 	d.db = db
+	d.db.Config.Logger = d
+	d.db.Config.Logger.LogMode(logger.Silent)
 
 	db.AutoMigrate(&MacInfo{}, &GlobalInfo{}, &AttachInfo{}, &Log{}, &FileMeta{}, &Message{})
 
@@ -170,34 +177,45 @@ func (d *DBOper) SwitchLogger() {
 	cfg := d.GetConfig()
 
 	if cfg.Debug {
-		d.db.Config.Logger = logger.New(d, logger.Config{
-			SlowThreshold: 200 * time.Millisecond, //慢日志阈值
-			LogLevel:      logger.Info,            //日志等级
-			Colorful:      false,                  //是否彩色打印
-		})
+		d.db.Config.Logger.LogMode(logger.Info)
 	} else {
-		d.db.Config.Logger = d.db.Config.Logger.LogMode(logger.Silent)
+		d.db.Config.Logger.LogMode(logger.Silent)
 	}
 }
 
-func (d *DBOper) DBLog(cmd string, format string, a ...any) {
-	if len(a) < 4 {
+func (d *DBOper) LogMode(level logger.LogLevel) logger.Interface {
+	d.level = level
+	return d
+}
+
+func (d *DBOper) Info(ctx context.Context, msg string, data ...interface{}) {
+}
+
+func (d *DBOper) Warn(ctx context.Context, msg string, data ...interface{}) {
+}
+
+func (d *DBOper) Error(ctx context.Context, msg string, data ...interface{}) {
+}
+
+func (d *DBOper) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+	if d.level == logger.Silent {
+		return
+	}
+
+	sql, rowsAffected := fc()
+	if strings.Contains(sql, "logs") {
 		return
 	}
 
 	info := &Log{}
-	info.Cmd = cmd
-	info.Msg = a[3].(string)
+	info.Cmd = "SQL语句"
+	info.Msg = fmt.Sprintf("语句：%s 行数：%d", sql, rowsAffected)
 
-	if strings.Contains(info.Msg, "logs") {
-		return
+	if err != nil && !errors.Is(err, logger.ErrRecordNotFound) {
+		info.Msg += " 错误：" + err.Error()
 	}
 
 	d.db.Save(info)
-}
-
-func (d *DBOper) Printf(format string, a ...any) {
-	d.DBLog("SQL语句", format, a...)
 }
 
 // /////////////////////////////////////////////////

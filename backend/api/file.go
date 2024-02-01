@@ -53,7 +53,7 @@ func (f *FileTransfer) autoClean() {
 
 			for _, data := range fileMetas {
 				if t.Sub(data.CreatedAt) > time.Duration(cfg.SharedLimit)*24*time.Hour {
-					dbObj.Delete(data)
+					dbObj.Delete(&data)
 					os.Remove(path.Join(f.filecachePath, data.MD5))
 				}
 			}
@@ -62,8 +62,8 @@ func (f *FileTransfer) autoClean() {
 			dbObj.Find(&messages)
 
 			for _, data := range messages {
-				if t.Sub(data.CreatedAt) > 7*24*time.Hour {
-					dbObj.Delete(data)
+				if t.Sub(data.CreatedAt) > time.Duration(cfg.SharedLimit)*24*time.Hour {
+					dbObj.Delete(&data)
 				}
 			}
 
