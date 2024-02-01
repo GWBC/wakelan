@@ -1,8 +1,8 @@
 <template>
-    <el-tabs v-model="actionName" class="v_flex" style="height: calc(100% - 32px); margin: 10px 20px 20px 20px"
+    <el-tabs v-model="actionName" class="file_tabs v_flex" style="height: calc(100% - 32px); margin: 10px 20px 20px 20px"
         type="border-card">
         <el-tab-pane class="v_flex" style="height: 100%;" label="文件中转" name="文件中转">
-            <el-card style="flex:3;margin-bottom: 10px;">
+            <el-card style="flex:3;margin-bottom: 10px;" body-style="height:100%;">
                 <el-upload ref="uploadObj" :show-file-list=true drag action="/api/file/upload" :http-request="upload"
                     :before-remove="remove" multiple>
                     <el-icon class="el-icon--upload"><upload-filled /></el-icon>
@@ -434,3 +434,9 @@ onMounted(() => {
     }
 })
 </script>
+
+<style>
+.file_tabs .el-tabs__content{
+    height: 100%; 
+}
+</style>

@@ -2,8 +2,9 @@
     <MainPage>
         <template #header />
         <template #main>
-            <el-tabs v-model="activeName" style="margin: 10px 20px 0px 20px; height: calc(100% - 20px);" type="border-card">
-                <el-tab-pane class="center" style="height: 100%;" label="系统设置" name="系统设置">
+            <el-tabs class="config_tabs" v-model="activeName" style="margin: 10px 20px 0px 20px; height: calc(100% - 20px);"
+                type="border-card">
+                <el-tab-pane class="hcenter" style="height: 100%;" label="系统设置" name="系统设置">
                     <el-card style="min-width:50%;">
                         <el-form label-position="left" label-width="100px" :model="formData">
                             <el-form-item label="公网地址">
@@ -43,7 +44,7 @@
                         </el-form>
                     </el-card>
                 </el-tab-pane>
-                <el-tab-pane class="center" style="height: 100%;" label="推送设置" name="推送设置">
+                <el-tab-pane class="hcenter" style="height: 100%;" label="推送设置" name="推送设置">
                     <el-card style="min-width:50%;">
                         <el-form label-position="left" label-width="100px" :model="formData">
                             <el-form-item label="爱语飞飞">
@@ -145,6 +146,12 @@ onMounted(function () {
     getData()
 })
 </script>
+
+<style>
+.config_tabs .el-tabs__content {
+    height: calc(100% - 80px);
+}
+</style>
 
 <style scoped>
 .btn_container {

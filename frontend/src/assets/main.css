@@ -18,6 +18,16 @@ html, body {
     justify-content: center;    
 }
 
+.vcenter{
+    display: flex;
+    align-items: center;   
+}
+
+.hcenter{
+    display: flex;
+    justify-content: center;    
+}
+
 .v_flex {
     display: flex;
     flex-direction: column;
