@@ -17,9 +17,9 @@
                     <el-table-column prop="name" label="文件名" min-width="200" />
                     <el-table-column label="进度" min-width="100">
                         <template #default="scope">
-                            <el-tag style="width: 60px;" v-if="scope.row.index == scope.row.size" type="success"
+                            <el-tag class="down_btn" v-if="scope.row.index == scope.row.size" type="success"
                                 effect="dark">100%</el-tag>
-                            <el-tag v-else type="info" style="width: 60px;" effect="dark">{{ Math.floor(100 *
+                            <el-tag v-else type="info" class="down_btn" effect="dark">{{ Math.floor(100 *
                                 (scope.row.index / scope.row.size)) }}%</el-tag>
                         </template>
                     </el-table-column>
@@ -27,9 +27,9 @@
                         <template #default="scope">
                             <el-row>
                                 <el-col :span="8">
-                                    <el-button class="button" v-if="scope.row.index != scope.row.size" disabled size="small"
+                                    <el-button class="down_btn" v-if="scope.row.index != scope.row.size" disabled
                                         type="info">下载</el-button>
-                                    <el-button class="button" v-else size="small" type="warning"
+                                    <el-button class="down_btn" v-else size="small" type="warning"
                                         @click="download(scope.row)">下载</el-button>
                                 </el-col>
                             </el-row>
@@ -436,7 +436,14 @@ onMounted(() => {
 </script>
 
 <style>
-.file_tabs .el-tabs__content{
-    height: 100%; 
+.file_tabs .el-tabs__content {
+    height: 100%;
+}
+</style>
+
+<style scoped>
+.down_btn {
+    height: 25px;
+    width: 60px;
 }
 </style>
