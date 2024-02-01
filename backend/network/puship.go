@@ -15,17 +15,20 @@ type PushIP struct {
 }
 
 func (p *PushIP) Start(second int) error {
-	dbObj := db.DBOperObj().GetDB()
-
 	isPrintLog := false
 
+	if second < 60 {
+		second = 60 //最低60秒
+	}
+
+	dbObj := db.DBOperObj().GetDB()
+
 	go func() {
-		if second < 60 {
-			second = 60
-		}
+		waitTime := 1 //初次等待时间为1秒
 
 		for {
-			time.Sleep(time.Duration(second) * time.Second)
+			time.Sleep(time.Duration(waitTime) * time.Second)
+			waitTime = second //调整之后的等待时间
 
 			info := db.DBOperObj().GetConfig()
 			p.ip = comm.GetGlobalIP(info.CheckIPAddr)
