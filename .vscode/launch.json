@@ -1,6 +1,7 @@
 {
   "version": "0.2.0",
   "configurations": [
+
     {
       "type": "msedge",
       "request": "launch",
@@ -21,7 +22,8 @@
       "request": "launch",
       "mode": "auto",
       "program": "${workspaceFolder}/backend",
-      "output": "${workspaceFolder}/bin/run_wakelan"
+      "output": "${workspaceFolder}/bin/run_wakelan",    
+      "console": "integratedTerminal"
     },
     {
       "name": "C/C++ Runner: Debug Session",

@@ -2,10 +2,9 @@
     <MainPage>
         <template #header />
         <template #main>
-            <el-tabs class="config_tabs" v-model="activeName" style="margin: 10px 20px 0px 20px; height: calc(100% - 20px);"
-                type="border-card">
-                <el-tab-pane class="hcenter" style="height: 100%;" label="系统设置" name="系统设置">
-                    <el-card style="min-width:50%;">
+            <el-tabs class="navigation" v-model="activeName" type="border-card">
+                <el-tab-pane class="flex justify-center" label="系统设置" name="系统设置">
+                    <el-card class="min-w-[50%]">
                         <el-form label-position="left" label-width="100px" :model="formData">
                             <el-form-item label="公网地址">
                                 <el-text style="font-weight: bold;" type="danger">{{ formData.ip }}</el-text>
@@ -31,12 +30,13 @@
                                 <el-switch v-model="formData.debug" />
                             </el-form-item>
                             <el-form-item label="动态密码">
-                                <el-text v-if="formData.auth_url.length == 0" class="text">请生成动态密码，使用手机小程序【动态密码】</el-text>
+                                <el-text v-if="formData.auth_url.length == 0"
+                                    class="text-red-600 text-lg font-bold">请生成动态密码，使用手机小程序【动态密码】</el-text>
                                 <qrcode-vue v-if="formData.auth_url.length != 0" :value="formData.auth_url"
                                     :size=qrCodeSize />
                             </el-form-item>
                             <el-form-item label="">
-                                <div class="btn_container">
+                                <div class="ml-auto">
                                     <el-button type="danger" @click="onGenPassowrd">生成动态密码</el-button>
                                     <el-button type="primary" @click="onModify()">提交</el-button>
                                 </div>
@@ -44,8 +44,8 @@
                         </el-form>
                     </el-card>
                 </el-tab-pane>
-                <el-tab-pane class="hcenter" style="height: 100%;" label="推送设置" name="推送设置">
-                    <el-card style="min-width:50%;">
+                <el-tab-pane class="flex justify-center" label="推送设置" name="推送设置">
+                    <el-card class="min-w-[50%]">
                         <el-form label-position="left" label-width="100px" :model="formData">
                             <el-form-item label="爱语飞飞">
                                 <el-input v-model="formData.ayff_token" />
@@ -57,7 +57,28 @@
                                 <el-input v-model.number="formData.wxpusher_topicid" />
                             </el-form-item>
                             <el-form-item label="">
-                                <div class="btn_container">
+                                <div class="ml-auto">
+                                    <el-button type="primary" @click="onModify()">提交</el-button>
+                                </div>
+                            </el-form-item>
+                        </el-form>
+                    </el-card>
+                </el-tab-pane>
+                <el-tab-pane class="flex justify-center" label="容器设置" name="容器设置">
+                    <el-card class="min-w-[50%]">
+                        <el-form label-position="left" label-width="100px" :model="formData">
+                            <el-form-item label="启动TCP">
+                                <el-switch v-model="formData.docker_enable_tcp" />
+                            </el-form-item>
+                            <el-form-item label="服务地址">
+                                <el-input :disabled="!formData.docker_enable_tcp" v-model="formData.docker_svr_ip" />
+                            </el-form-item>
+                            <el-form-item label="服务端口">
+                                <el-input :disabled="!formData.docker_enable_tcp"
+                                    v-model.number="formData.docker_svr_port" />
+                            </el-form-item>
+                            <el-form-item label="">
+                                <div class="ml-auto">
                                     <el-button type="primary" @click="onModify()">提交</el-button>
                                 </div>
                             </el-form-item>
@@ -93,6 +114,9 @@ interface GuacdInfo {
     wxpusher_topicid: number
     shared_limit: number
     check_ip_addr: string
+    docker_enable_tcp: boolean
+    docker_svr_ip: string
+    docker_svr_port: number
     ip: string
 }
 
@@ -109,6 +133,9 @@ const formData = ref<GuacdInfo>({
     wxpusher_topicid: 0,
     shared_limit: 7,
     check_ip_addr: '',
+    docker_enable_tcp: false,
+    docker_svr_ip: '127.0.0.1',
+    docker_svr_port: 2375,
     ip: '',
 })
 
@@ -146,22 +173,3 @@ onMounted(function () {
     getData()
 })
 </script>
-
-<style>
-.config_tabs .el-tabs__content {
-    height: calc(100% - 80px);
-}
-</style>
-
-<style scoped>
-.btn_container {
-    margin-left: auto;
-}
-
-.text {
-    color: red;
-    font-size: 16px;
-    font-weight: bold;
-}
-</style>
- 

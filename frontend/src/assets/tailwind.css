@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components{
+  .navigation{
+    @apply h-[calc(100%-18px)] mt-2 mr-5 ml-5
+  }
+
+  .navigation-body{
+    @apply h-full !pb-1 !pt-1
+  }
+}
+
+html, body {
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+}

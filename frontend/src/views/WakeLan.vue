@@ -49,8 +49,8 @@
       </el-row>
     </template>
     <template #main>
-      <el-card class="wakelan_card" body-class="wakelan_card_body">
-        <el-table class="wakelan_table disable-text-selection" element-loading-background="rgba(255, 255, 255, 20)"
+      <el-card class="navigation" body-class="navigation-body">
+        <el-table class="!h-full" element-loading-background="rgba(255, 255, 255, 20)"
           v-loading="table_loading" :data="table_data_filter" stripe @row-dblclick="onOpenRemote" empty-text=" "
           :default-sort="{ prop: 'ip', order: 'ascending' }" @sort-change="customSort">
           <el-table-column width="48">
@@ -589,20 +589,3 @@ onUnmounted(function () {
   uninitWebsocket()
 })
 </script>
-
-<style>
-.wakelan_card_body {
-  height: calc(100% - 20px);
-}
-</style>
-
-<style scoped>
-.wakelan_card {
-  height: calc(100% - 20px);
-  margin: 10px 20px 0px 20px;
-}
-
-.wakelan_table {
-  height: 100%;
-}
-</style>

@@ -35,6 +35,11 @@ const router = createRouter({
       component: () => import('../views/FileTransfer.vue')
     },
     {
+      path: '/docker',
+      name: 'docker',
+      component: () => import('../views/DockerClient.vue')
+    },
+    {
       path: '/shared',
       name: 'shared',
       component: () => import('../views/FileShared.vue')

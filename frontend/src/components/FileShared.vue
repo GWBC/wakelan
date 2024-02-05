@@ -1,8 +1,7 @@
 <template>
-    <el-tabs v-model="actionName" class="file_tabs v_flex" style="height: calc(100% - 32px); margin: 10px 20px 20px 20px"
-        type="border-card">
-        <el-tab-pane class="v_flex" style="height: 100%;" label="文件中转" name="文件中转">
-            <el-card style="flex:3;margin-bottom: 10px;" body-style="height:100%;">
+    <el-tabs v-model="actionName" class="file-tabs navigation flex flex-col" type="border-card">
+        <el-tab-pane class="h-full flex flex-col" label="文件中转" name="文件中转">
+            <el-card class="flex-[5] mb-2">
                 <el-upload ref="uploadObj" :show-file-list=true drag action="/api/file/upload" :http-request="upload"
                     :before-remove="remove" multiple>
                     <el-icon class="el-icon--upload"><upload-filled /></el-icon>
@@ -11,8 +10,8 @@
                     </div>
                 </el-upload>
             </el-card>
-            <el-card style="flex:5" body-class="full-height">
-                <el-table style="height: calc(100% - 20px);" :data="metaDatas" empty-text=" " stripe>
+            <el-card class="flex-[7]" body-class="h-full !pb-1">
+                <el-table class="!h-[calc(100%-20px)]" :data="metaDatas" empty-text=" " stripe>
                     <el-table-column prop="time" label="时间" min-width="100" />
                     <el-table-column prop="name" label="文件名" min-width="200" />
                     <el-table-column label="进度" min-width="100">
@@ -38,11 +37,11 @@
                 </el-table>
             </el-card>
         </el-tab-pane>
-        <el-tab-pane class="v_flex" style="height: 100%;" label="消息中转" name="消息中转">
-            <el-card style="height: 100%;" body-class="full-height v_flex" body-style="height: calc(100% - 20px)">
+        <el-tab-pane class="flex flex-col h-full" label="消息中转" name="消息中转">
+            <el-card class="h-full" body-class="h-[calc(100%-20px)] flex flex-col !pb-1">
                 <el-input v-model="msgData" :rows="3" type="textarea" @keydown.enter.prevent="sendMsg"
                     placeholder="请输入消息，按回车发送消息" />
-                <el-table :data="msgDatas" style="flex:1" empty-text=" " stripe>
+                <el-table :data="msgDatas" class="flex-1" empty-text=" " stripe>
                     <el-table-column label="时间" prop="time"></el-table-column>
                     <el-table-column label="消息">
                         <template #default="scope">
@@ -53,7 +52,8 @@
                     </el-table-column>
                     <el-table-column label="操作" fixed="right" min-width="100px">
                         <template #default="scope">
-                            <el-button class="down_btn" type="success" size="small" @click="msgCopy(scope.row)">复制</el-button>
+                            <el-button class="down_btn" type="success" size="small"
+                                @click="msgCopy(scope.row)">复制</el-button>
                         </template>
                     </el-table-column>
                 </el-table>
@@ -61,19 +61,18 @@
         </el-tab-pane>
         <el-tab-pane v-if="sharedKey.length == 0" label="链接分享" name="链接分享">
             <el-dialog v-model="qrcodeShow">
-                <div class="center">
+                <div class="flex items-center justify-center">
                     <qrcode-vue :value="sharedInfo.path" :size="400" />
                 </div>
             </el-dialog>
             <el-card>
                 <el-text truncated>
-                    分享链接：<a :href="sharedInfo.path" target="_blank">{{ sharedInfo.path }}</a>
+                    分享链接：<a class="text-blue-500" :href="sharedInfo.path" target="_blank">{{ sharedInfo.path }}</a>
                 </el-text>
-                <div style="margin-top: 5px;">
-                    <el-button style="padding: 0px;" link :icon="DocumentCopy" @click="sharedCopy">复制</el-button>
-                    <el-button style="padding: 0px;" link @click="shardQRCode">
-                        <svg style="width: 16px; height: 16px; margin-right: 5px;" xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 512 512">
+                <div class="mt-1">
+                    <el-button class="p-0" link :icon="DocumentCopy" @click="sharedCopy">复制</el-button>
+                    <el-button class="p-0" link @click="shardQRCode">
+                        <svg class="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
                             <rect x="336" y="336" width="80" height="80" rx="8" ry="8" />
                             <rect x="272" y="272" width="64" height="64" rx="8" ry="8" />
                             <rect x="416" y="416" width="64" height="64" rx="8" ry="8" />
@@ -436,7 +435,7 @@ onMounted(() => {
 </script>
 
 <style>
-.file_tabs .el-tabs__content {
+.file-tabs .el-tabs__content {
     height: 100%;
 }
 </style>

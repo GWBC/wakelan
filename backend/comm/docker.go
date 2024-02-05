@@ -4,15 +4,18 @@ import (
 	"bufio"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
@@ -343,6 +346,18 @@ func (d *DockerClient) DelNetwork(name string) error {
 }
 
 // //////////////////////////////////////////////////////////////////
+// 容器信息
+func (d *DockerClient) InspectContainer(name string) (types.ContainerJSON, error) {
+	cli, err := d.conn()
+	if err != nil {
+		return types.ContainerJSON{}, err
+	}
+
+	defer cli.Close()
+
+	return cli.ContainerInspect(context.Background(), name)
+}
+
 // 获取容器
 func (d *DockerClient) GetContainer() ([]types.Container, error) {
 	cli, err := d.conn()
@@ -361,13 +376,14 @@ type DockerContainerCreate struct {
 	Name       string   //容器名称
 	Image      string   //镜像名称
 	Cmd        []string //执行命令
-	Ports      []string //端口映射  public:private/proto，public-public:private-private/proto
-	Privileged bool     //是否开启特权
+	Privileged bool     //开启特权
 	NetName    string   //网络名称
+	Ports      []string //端口映射 public:private/proto，public-public:private-private/proto
+	Mounts     []string //目录映射 public:private
 }
 
 // 运行容器
-func (d *DockerClient) RunContainer(cfg *DockerContainerCreate) error {
+func (d *DockerClient) RunContainer(cfg *DockerContainerCreate, isUpdate bool) error {
 	cli, err := d.conn()
 	if err != nil {
 		return err
@@ -375,15 +391,22 @@ func (d *DockerClient) RunContainer(cfg *DockerContainerCreate) error {
 
 	defer cli.Close()
 
-	imgs, err := d.GetImages(cfg.Image)
-	if err != nil {
-		return err
-	}
-
-	if len(imgs) == 0 {
+	if isUpdate {
 		err = d.PullImage(cfg.Image)
 		if err != nil {
 			return err
+		}
+	} else {
+		imgs, err := d.GetImages(cfg.Image)
+		if err != nil {
+			return err
+		}
+
+		if len(imgs) == 0 {
+			err = d.PullImage(cfg.Image)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -392,14 +415,29 @@ func (d *DockerClient) RunContainer(cfg *DockerContainerCreate) error {
 	containerCfg.Image = cfg.Image
 	containerCfg.Cmd = append(containerCfg.Cmd, cfg.Cmd...)
 
-	//端口映射配置
+	//端口、目录映射配置
 	_, portMap, err := nat.ParsePortSpecs(cfg.Ports)
 	if err != nil {
 		return err
 	}
 
+	mounts := []mount.Mount{}
+	for _, m := range cfg.Mounts {
+		mts := strings.Split(m, ":")
+		if len(mts) != 2 {
+			return errors.New("mounts error")
+		}
+
+		mounts = append(mounts, mount.Mount{
+			Type:   mount.TypeBind,
+			Source: mts[0],
+			Target: mts[1],
+		})
+	}
+
 	containerHost := container.HostConfig{}
 	containerHost.PortBindings = portMap
+	containerHost.Mounts = mounts
 	containerHost.Privileged = cfg.Privileged
 
 	//网络配置
@@ -421,4 +459,200 @@ func (d *DockerClient) RunContainer(cfg *DockerContainerCreate) error {
 	}
 
 	return nil
+}
+
+// 删除容器
+func (d *DockerClient) DelContainer(name string, force bool) error {
+	cli, err := d.conn()
+	if err != nil {
+		return err
+	}
+
+	defer cli.Close()
+
+	return cli.ContainerRemove(context.Background(), name, container.RemoveOptions{
+		Force: force,
+	})
+}
+
+// 启动容器
+func (d *DockerClient) StartlContainer(name string) error {
+	cli, err := d.conn()
+	if err != nil {
+		return err
+	}
+
+	defer cli.Close()
+
+	return cli.ContainerStart(context.Background(), name, container.StartOptions{})
+}
+
+// 停止容器
+func (d *DockerClient) StopContainer(name string) error {
+	cli, err := d.conn()
+	if err != nil {
+		return err
+	}
+
+	defer cli.Close()
+
+	return cli.ContainerStop(context.Background(), name, container.StopOptions{})
+}
+
+// 重启容器
+func (d *DockerClient) RestartContainer(name string) error {
+	cli, err := d.conn()
+	if err != nil {
+		return err
+	}
+
+	defer cli.Close()
+
+	return cli.ContainerRestart(context.Background(), name, container.StopOptions{})
+}
+
+// 修改容器名称
+func (d *DockerClient) RenameContainer(name string, newName string) error {
+	cli, err := d.conn()
+	if err != nil {
+		return err
+	}
+
+	defer cli.Close()
+
+	return cli.ContainerRename(context.Background(), name, newName)
+}
+
+// 容器日志
+func (d *DockerClient) LogsContainer(name string, logFun func(r io.Reader) error) error {
+	cli, err := d.conn()
+	if err != nil {
+		return err
+	}
+
+	defer cli.Close()
+
+	r, err := cli.ContainerLogs(context.Background(), name, container.LogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Details:    false,
+		Timestamps: true,
+		Follow:     true,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	defer r.Close()
+
+	if logFun != nil {
+		err = logFun(r)
+	}
+
+	return err
+}
+
+type ContainerExecTTYConfig struct {
+	Rows           uint   //行
+	Columns        uint   //列
+	TermType       string //终端类型，如：xterm
+	InteractionFun func(r io.Reader, w io.Writer) error
+}
+
+type ContainerExecConfig struct {
+	Name   string                  //容器名称
+	Cmd    []string                //命令
+	TTYCfg *ContainerExecTTYConfig //tty配置
+}
+
+// 执行命令
+func (d *DockerClient) ExecContainer(cfg *ContainerExecConfig) error {
+	cli, err := d.conn()
+	if err != nil {
+		return err
+	}
+
+	defer cli.Close()
+
+	ctx := context.Background()
+
+	var consoleSize *[2]uint
+	env := []string{}
+
+	tty := cfg.TTYCfg
+
+	if tty != nil {
+		consoleSize = &[2]uint{tty.Rows, tty.Columns}
+		env = append(env, fmt.Sprintf("TERM=%s", tty.TermType))
+	} else {
+		env = append(env, "TERM=xterm")
+	}
+
+	res, err := cli.ContainerExecCreate(ctx, cfg.Name, types.ExecConfig{
+		Cmd:          cfg.Cmd,
+		AttachStdin:  true,
+		AttachStdout: true,
+		AttachStderr: true,
+		Tty:          true,
+		Env:          env,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if tty == nil {
+		err = cli.ContainerExecStart(ctx, res.ID, types.ExecStartCheck{
+			Detach: false,
+			Tty:    true,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		des, err := cli.ContainerExecInspect(ctx, res.ID)
+		if err != nil {
+			return err
+		}
+
+		if des.ExitCode == 0 {
+			return nil
+		}
+
+		return fmt.Errorf("exit code %d", des.ExitCode)
+	}
+
+	if tty.InteractionFun == nil {
+		return errors.New("InteractionFun is nil")
+	}
+
+	attachInfo, err := cli.ContainerExecAttach(ctx, res.ID, types.ExecStartCheck{
+		Detach:      false,
+		Tty:         true,
+		ConsoleSize: consoleSize,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	defer attachInfo.Close()
+
+	err = tty.InteractionFun(attachInfo.Reader, attachInfo.Conn)
+	if err != nil {
+		return err
+	}
+
+	des, err := cli.ContainerExecInspect(ctx, res.ID)
+	if err != nil {
+		return err
+	}
+
+	if des.ExitCode == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("exit code %d", des.ExitCode)
 }

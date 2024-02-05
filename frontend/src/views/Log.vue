@@ -2,9 +2,8 @@
     <MainPage>
         <template #header />
         <template #main>
-            <el-card style="margin: 10px 20px 0px 20px; height: calc(100% - 20px);" body-class="v_flex"
-                body-style="height: calc(100% - 15px)">
-                <el-table style="flex: 1;" :data="table_data" empty-text=" " stripe v-loading="table_loading">
+            <el-card class="navigation" body-class="flex flex-col !p-1 h-full">
+                <el-table style="flex: 1;" :data="table_data" empty-text=" " :show-overflow-tooltip="false" stripe v-loading="table_loading">
                     <el-table-column prop="time" label="时间" width="180" />
                     <el-table-column prop="cmd" label="动作" width="180" />
                     <el-table-column prop="msg" label="信息" />

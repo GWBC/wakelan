@@ -30,6 +30,10 @@ type ConfigInfo struct {
 	Debug       bool `gorm:"column:debug" json:"debug"`
 	SharedLimit int  `gorm:"column:shared_limit" json:"shared_limit"`
 
+	DockerEnableTCP bool   `gorm:"docker_enable_tcp" json:"docker_enable_tcp"`
+	DockerSvrIP     string `gorm:"docker_svr_ip" json:"docker_svr_ip"`
+	DockerSvrPort   int    `gorm:"docker_svr_port" json:"docker_svr_port"`
+
 	CheckIPAddr string `gorm:"column:check_ip_addr;" json:"check_ip_addr"`
 }
 
@@ -107,6 +111,10 @@ func (r *System) GetConfigInfo(c *gin.Context) {
 	cfg.Debug = info.Debug
 	cfg.SharedLimit = info.SharedLimit
 
+	cfg.DockerEnableTCP = info.DockerEnableTCP
+	cfg.DockerSvrIP = info.DockerSvrIP
+	cfg.DockerSvrPort = info.DockerSvrPort
+
 	cfg.CheckIPAddr = info.CheckIPAddr
 
 	c.JSON(200, gin.H{
@@ -141,11 +149,15 @@ func (r *System) SetConfig(c *gin.Context) {
 	cfg.AYFFToken = cfgInfo.AYFFToken
 	cfg.WXPusherToken = cfgInfo.WXPusherToken
 	cfg.WXPusherTopicId = cfgInfo.WXPusherTopicId
+	cfg.DockerEnableTCP = cfgInfo.DockerEnableTCP
+	cfg.DockerSvrIP = cfgInfo.DockerSvrIP
+	cfg.DockerSvrPort = cfgInfo.DockerSvrPort
 	cfg.CheckIPAddr = cfgInfo.CheckIPAddr
 
 	dbObj.Select("guacd_host", "guacd_port", "auth_url", "secret",
 		"ayff_token", "wxpusher_token", "wxpusher_topicid",
-		"debug", "shared_limit", "check_ip_addr").Save(cfg)
+		"debug", "shared_limit", "check_ip_addr", "docker_enable_tcp",
+		"docker_svr_ip", "docker_svr_port").Save(cfg)
 
 	db.DBOperObj().SwitchLogger()
 
