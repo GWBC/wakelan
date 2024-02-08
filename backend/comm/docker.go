@@ -119,7 +119,7 @@ func (d *DockerClient) GetVersion() (types.Version, error) {
 
 // //////////////////////////////////////////////////////////////////
 // 获取镜像
-func (d *DockerClient) GetImages(imageName string) ([]image.Summary, error) {
+func (d *DockerClient) GetImages(name string) ([]image.Summary, error) {
 	cli, err := d.conn()
 	if err != nil {
 		return []image.Summary{}, nil
@@ -128,8 +128,8 @@ func (d *DockerClient) GetImages(imageName string) ([]image.Summary, error) {
 	defer cli.Close()
 
 	filterArgs := filters.NewArgs()
-	if len(imageName) != 0 {
-		filterArgs = filters.NewArgs(filters.KeyValuePair{Key: "reference", Value: imageName})
+	if len(name) != 0 {
+		filterArgs = filters.NewArgs(filters.KeyValuePair{Key: "reference", Value: name})
 	}
 
 	return cli.ImageList(context.Background(), types.ImageListOptions{
@@ -359,16 +359,22 @@ func (d *DockerClient) InspectContainer(name string) (types.ContainerJSON, error
 }
 
 // 获取容器
-func (d *DockerClient) GetContainer() ([]types.Container, error) {
+func (d *DockerClient) GetContainers(name string) ([]types.Container, error) {
 	cli, err := d.conn()
 	if err != nil {
 		return []types.Container{}, err
 	}
 
+	filterArgs := filters.NewArgs()
+	if len(name) != 0 {
+		filterArgs = filters.NewArgs(filters.KeyValuePair{Key: "name", Value: name})
+	}
+
 	defer cli.Close()
 
 	return cli.ContainerList(context.Background(), container.ListOptions{
-		All: true,
+		All:     true,
+		Filters: filterArgs,
 	})
 }
 
@@ -524,7 +530,7 @@ func (d *DockerClient) RenameContainer(name string, newName string) error {
 }
 
 // 容器日志
-func (d *DockerClient) LogsContainer(name string, logFun func(r io.Reader) error) error {
+func (d *DockerClient) LogsContainer(name string, logFun func(r *bufio.Reader) error) error {
 	cli, err := d.conn()
 	if err != nil {
 		return err
@@ -535,7 +541,7 @@ func (d *DockerClient) LogsContainer(name string, logFun func(r io.Reader) error
 	r, err := cli.ContainerLogs(context.Background(), name, container.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
-		Details:    false,
+		Details:    true,
 		Timestamps: true,
 		Follow:     true,
 	})
@@ -546,23 +552,27 @@ func (d *DockerClient) LogsContainer(name string, logFun func(r io.Reader) error
 
 	defer r.Close()
 
+	reader := bufio.NewReader(r)
+
 	if logFun != nil {
-		err = logFun(r)
+		err = logFun(reader)
 	}
 
 	return err
 }
 
 type ContainerExecTTYConfig struct {
-	Rows           uint   //行
-	Columns        uint   //列
-	TermType       string //终端类型，如：xterm
-	InteractionFun func(r io.Reader, w io.Writer) error
+	Rows     uint   //行
+	Columns  uint   //列
+	TermType string //终端类型，如：xterm
+	ReadFun  func(r io.Reader) error
+	WriteFun func(w io.Writer) (uint, uint, error)
 }
 
 type ContainerExecConfig struct {
 	Name   string                  //容器名称
 	Cmd    []string                //命令
+	Env    []string                //环境变量
 	TTYCfg *ContainerExecTTYConfig //tty配置
 }
 
@@ -577,17 +587,32 @@ func (d *DockerClient) ExecContainer(cfg *ContainerExecConfig) error {
 
 	ctx := context.Background()
 
-	var consoleSize *[2]uint
 	env := []string{}
-
 	tty := cfg.TTYCfg
+	consoleSize := [2]uint{0, 0}
 
 	if tty != nil {
-		consoleSize = &[2]uint{tty.Rows, tty.Columns}
+		consoleSize[0] = tty.Rows
+		consoleSize[1] = tty.Columns
+
+		if len(tty.TermType) == 0 {
+			tty.TermType = "xterm"
+		}
+
+		if tty.Rows != 0 && tty.Columns != 0 {
+			//解决vi显示不全问题
+			env = append(env, fmt.Sprintf("LINES=%d", tty.Rows))
+			env = append(env, fmt.Sprintf("COLUMNS=%d", tty.Columns))
+		}
+
+		//使用的终端类型
 		env = append(env, fmt.Sprintf("TERM=%s", tty.TermType))
-	} else {
-		env = append(env, "TERM=xterm")
+
+		//支持中文
+		env = append(env, "LANG=zh_CN.UTF-8")
 	}
+
+	env = append(env, cfg.Env...)
 
 	res, err := cli.ContainerExecCreate(ctx, cfg.Name, types.ExecConfig{
 		Cmd:          cfg.Cmd,
@@ -596,6 +621,7 @@ func (d *DockerClient) ExecContainer(cfg *ContainerExecConfig) error {
 		AttachStderr: true,
 		Tty:          true,
 		Env:          env,
+		ConsoleSize:  &consoleSize,
 	})
 
 	if err != nil {
@@ -624,14 +650,14 @@ func (d *DockerClient) ExecContainer(cfg *ContainerExecConfig) error {
 		return fmt.Errorf("exit code %d", des.ExitCode)
 	}
 
-	if tty.InteractionFun == nil {
-		return errors.New("InteractionFun is nil")
+	if tty.ReadFun == nil && tty.WriteFun == nil {
+		return errors.New("interaction is nil")
 	}
 
 	attachInfo, err := cli.ContainerExecAttach(ctx, res.ID, types.ExecStartCheck{
 		Detach:      false,
 		Tty:         true,
-		ConsoleSize: consoleSize,
+		ConsoleSize: &consoleSize,
 	})
 
 	if err != nil {
@@ -640,19 +666,57 @@ func (d *DockerClient) ExecContainer(cfg *ContainerExecConfig) error {
 
 	defer attachInfo.Close()
 
-	err = tty.InteractionFun(attachInfo.Reader, attachInfo.Conn)
-	if err != nil {
-		return err
+	ctx, cancelFun := context.WithCancel(context.TODO())
+
+	if tty.ReadFun != nil {
+		go func() {
+		rexit:
+			for {
+				select {
+				case <-ctx.Done():
+					break rexit
+				default:
+					err := tty.ReadFun(attachInfo.Reader)
+					if err != nil {
+						break rexit
+					}
+				}
+			}
+
+			attachInfo.Close()
+			cancelFun()
+		}()
 	}
 
-	des, err := cli.ContainerExecInspect(ctx, res.ID)
-	if err != nil {
-		return err
+	if tty.WriteFun != nil {
+		go func() {
+		wexit:
+			for {
+				select {
+				case <-ctx.Done():
+					break wexit
+				default:
+					rows, cols, err := tty.WriteFun(attachInfo.Conn)
+					if err != nil {
+						break wexit
+					}
+
+					if consoleSize[0] != 0 && consoleSize[1] != 0 {
+						cli.ContainerExecResize(ctx, res.ID, container.ResizeOptions{
+							Height: rows,
+							Width:  cols,
+						})
+					}
+				}
+			}
+
+			attachInfo.Close()
+			cancelFun()
+		}()
 	}
 
-	if des.ExitCode == 0 {
-		return nil
-	}
+	<-ctx.Done()
+	cancelFun()
 
-	return fmt.Errorf("exit code %d", des.ExitCode)
+	return err
 }

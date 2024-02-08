@@ -50,8 +50,8 @@
     </template>
     <template #main>
       <el-card class="navigation" body-class="navigation-body">
-        <el-table class="!h-full" element-loading-background="rgba(255, 255, 255, 20)"
-          v-loading="table_loading" :data="table_data_filter" stripe @row-dblclick="onOpenRemote" empty-text=" "
+        <el-table class="!h-full" element-loading-background="rgba(255, 255, 255, 20)" v-loading="table_loading"
+          :data="table_data_filter" stripe @row-dblclick="onOpenRemote" empty-text=" "
           :default-sort="{ prop: 'ip', order: 'ascending' }" @sort-change="customSort">
           <el-table-column width="48">
             <template #default="scope">
@@ -79,14 +79,10 @@
               <el-text v-else> {{ scope.row.manuf }}</el-text>
             </template>
           </el-table-column>
-          <el-table-column label="在线" width="60">
+          <el-table-column label="" width="60">
             <template #default="scope">
-              <el-icon v-show="scope.row.online">
-                <CircleCheck color="#529b2e" />
-              </el-icon>
-              <el-icon v-show="!scope.row.online">
-                <CircleClose color="red" />
-              </el-icon>
+              <div v-if="scope.row.online" class="w-3 h-3 rounded-full bg-green-400"></div>
+              <div v-else class="w-3 h-3 rounded-full bg-red-400"></div>
             </template>
           </el-table-column>
           <el-table-column label="编辑" width="80">
@@ -121,6 +117,7 @@
 <script setup lang="ts">
 import '@/assets/wakelan.css'
 import { Fetch, AsyncFetch } from '@/lib/comm'
+import { WBSocket } from '@/lib/websocket'
 import { Delete } from '@element-plus/icons-vue'
 import Remote from '@/components/remote/Remote.vue'
 import RemoteConfig from '@/components/remote/RemoteConfig.vue'
@@ -155,11 +152,6 @@ interface NetcardInfo {
   ips: string[]
 }
 
-interface WebsocketInfo {
-  s: WebSocket | null
-  conn_timer: number
-}
-
 const table_loading = ref(false)
 const table_data = ref<PCInfo[]>([])
 
@@ -182,7 +174,7 @@ const addPCInfoDlgData = ref<PCInfo>({} as PCInfo)
 const group: string = 'api/wake/'
 
 let wsReconnCount = 0
-let websocket: WebsocketInfo = { s: null, conn_timer: 0 }
+let websocket: WBSocket | null = null
 
 const table_data_filter = computed(() => {
   try {
@@ -274,63 +266,37 @@ function editChange(val: boolean, pcInfo: PCInfo) {
   }
 }
 
-function wsOpen(event: Event) {
+function initWebsocket() {
+  websocket = new WBSocket(6)
 
-}
-
-function wsMsg(event: MessageEvent) {
-  //重置重连次数
-  wsReconnCount = 0
-
-  let a = event.data.toString().split(",")
-  for (let i = 0; i < table_data.value.length; ++i) {
-    if (table_data.value[i].mac == a[1]) {
-      table_data.value[i].online = true
+  websocket.SetMsgFun((event: MessageEvent) => {
+    let a = event.data.toString().split(",")
+    for (let i = 0; i < table_data.value.length; ++i) {
+      if (table_data.value[i].mac == a[1]) {
+        table_data.value[i].online = true
+      }
     }
-  }
-}
+  })
 
-function wsError(event: Event) {
-  websocket.s!.close()
-}
-
-function wsClose(event: Event) {
-  websocket.conn_timer = setTimeout(() => {
-    wsReconnCount++
-    if (wsReconnCount > 10) {
+  websocket.SetCloseFun((event: Event, reconnTime: number): boolean => {
+    if (reconnTime >= 60) {
       ElMessage.error("Websocket 重连超过限制，退出到登录页面")
       setTimeout(() => {
         router.push("/login")
-      }, 6000)
-    } else {
-      initWebsocket()
+      }, 3000)
+
+      return false
     }
-  }, 6000)
-}
 
-function initWebsocket() {
-  websocket.conn_timer = 0
-  websocket.s = new WebSocket(`ws://${window.location.host}/${group}pingpc`)
+    return true
+  })
 
-  websocket.s.addEventListener("open", wsOpen)
-  websocket.s.addEventListener("message", wsMsg)
-  websocket.s.addEventListener("error", wsError)
-  websocket.s.addEventListener("close", wsClose)
+  websocket.Conn(`ws://${window.location.host}/${group}pingpc`)
 }
 
 function uninitWebsocket() {
-  if (websocket.conn_timer != 0) {
-    clearTimeout(websocket.conn_timer)
-    websocket.conn_timer = 0
-  }
-
-  if (websocket.s != null) {
-    websocket.s.removeEventListener("open", wsOpen)
-    websocket.s.removeEventListener("message", wsMsg)
-    websocket.s.removeEventListener("error", wsError)
-    websocket.s.removeEventListener("close", wsClose)
-    websocket.s.close()
-    websocket.s = null
+  if (websocket) {
+    websocket.Disconn()
   }
 }
 
@@ -446,7 +412,8 @@ function wakeUP(cloumn: any, row: any) {
 }
 
 function pingAllPC() {
-  if (!websocket.s) {
+  const w = websocket?.WebSocketObj()
+  if (!w) {
     ElMessage.error("websocket not connected")
     return
   }
@@ -460,7 +427,7 @@ function pingAllPC() {
     table_data.value[i].online = false
   }
 
-  websocket.s.send(JSON.stringify(cmd))
+  w.send(JSON.stringify(cmd))
 }
 
 function onOpenRemote(pcInfo: PCInfo) {

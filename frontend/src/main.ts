@@ -6,6 +6,7 @@ import '@/assets/main.css'
 import '@/assets/tailwind.css'
 
 //引入css
+import 'xterm/css/xterm.css'
 import 'element-plus/dist/index.css'
 
 //引入组件

@@ -269,34 +269,32 @@ function rowFSDBClick(fsInfo: FSInfo) {
                 cancelButtonText: '取消',
                 type: 'warning',
             }
-        )
-            .then(() => {
-                const logMsg: FSLogInfo = { cmd: "下载", time: Now2Str() }
-                let i = fsDlgLogData.push(logMsg) - 1
+        ).then(() => {
+            const logMsg: FSLogInfo = { cmd: "下载", time: Now2Str() }
+            let i = fsDlgLogData.push(logMsg) - 1
 
-                client?.GetFileSystem()?.Down(fsInfo.path, function (recvSize, isEnd, err) {
-                    let size = recvSize / 1024
-                    let unit = "KB"
-                    if (size >= 1024) {
-                        size /= 1024
-                        unit = "MB"
-                    }
+            client?.GetFileSystem()?.Down(fsInfo.path, function (recvSize, isEnd, err) {
+                let size = recvSize / 1024
+                let unit = "KB"
+                if (size >= 1024) {
+                    size /= 1024
+                    unit = "MB"
+                }
 
-                    if (err) {
-                        fsDlgLogData[i].msg = `${fsInfo.name}下载失败，原因：${err}`
-                        return
-                    }
+                if (err) {
+                    fsDlgLogData[i].msg = `${fsInfo.name}下载失败，原因：${err}`
+                    return
+                }
 
-                    if (isEnd) {
-                        fsDlgLogData[i].msg = `${fsInfo.name}下载完成，文件大小：${size.toFixed(2)}${unit}`
-                        return
-                    }
+                if (isEnd) {
+                    fsDlgLogData[i].msg = `${fsInfo.name}下载完成，文件大小：${size.toFixed(2)}${unit}`
+                    return
+                }
 
-                    fsDlgLogData[i].msg = `${fsInfo.name}下载中，大小：${size.toFixed(2)}${unit}`
-                })
+                fsDlgLogData[i].msg = `${fsInfo.name}下载中，大小：${size.toFixed(2)}${unit}`
             })
-            .catch(() => {
-            })
+        }).catch(() => {
+        })
 
         return
     }

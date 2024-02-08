@@ -71,6 +71,19 @@ func (a *Web) SetFileAPI(r *gin.Engine) {
 	group.POST("/addMsg", api.AddMessage)
 }
 
+func (a *Web) SetDockerClientApi(r *gin.Engine) {
+	api := &DockerClient{}
+	api.Init()
+
+	group := r.Group("/api/docker")
+	group.GET("/getImages", api.GetImages)
+	group.GET("/getContainers", api.GetContainers)
+	group.GET("/delContainer", api.DelContainer)
+	group.GET("/renameContainer", api.RenameContainer)
+	group.GET("/getLogsContainer", api.getContainerLogs)
+	group.GET("/enterContainer", api.enterContainer)
+}
+
 ///////////////////////////////////////////////////////////////////
 
 var tokenManagerObj *comm.TokenManager
@@ -271,6 +284,9 @@ func (a *Web) Init(port string) {
 
 	//设置文件传输接口
 	a.SetFileAPI(r)
+
+	//设置容器接口
+	a.SetDockerClientApi(r)
 
 	// 启动服务
 	r.Run(port)
