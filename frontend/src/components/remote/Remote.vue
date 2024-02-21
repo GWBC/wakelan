@@ -1,5 +1,8 @@
 <template>
-    <el-dialog ref="fsDlg" @keydown="onFSKeyDown" :append-to-body="true" @dragover.prevent v-model="fsDlgShow">
+    <floating-ball @mousedown.stop @mousemove.stop @touchstart.stop @touchend.stop @touchmove.stop v-if="showRemote"
+        :theme="theme" :position="position" :events="events" :column="column" />
+
+    <el-dialog ref="fsDlg" @keydown="onFSKeyDown" @dragover.prevent v-model="fsDlgShow" :append-to-body="true">
         <template #header>
             <el-breadcrumb class="breadcrumb" separator=">">
                 <el-breadcrumb-item v-for="(item, index) in fsCurPathObj" @click='changeDir(item.path)'>
@@ -38,8 +41,8 @@
         </el-collapse>
     </el-dialog>
 
-    <el-dialog class="remoteDlg" :append-to-body="true" v-model="showRemote" :close-on-press-escape="false"
-        :fullscreen="true" :show-close="false" @open="onOpen" @close="onClose">
+    <el-dialog class="remoteDlg" v-model="showRemote" :close-on-press-escape="false" :fullscreen="true" :show-close="false"
+        :append-to-body="true" @open="onOpen" @close="onClose">
         <div ref="viewport" class="viewport" v-loading="isLoading" element-loading-text="连接中..."
             :element-loading-spinner="loadingSVG" element-loading-svg-view-box="-10, -10, 50, 50"
             element-loading-background="rgba(0, 0, 0, 0.7)">
@@ -68,7 +71,8 @@
                     </el-button>
                 </el-button-group>
             </div>
-            <!-- 必须使用tabindex，否则元素不支持焦点 -->
+
+            <!--远程绘制div，必须使用tabindex，否则元素不支持焦点 -->
             <div ref="display" class="display" :style="displayStyle" />
         </div>
     </el-dialog>
@@ -76,14 +80,13 @@
   
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { FullScreenOrRecover, Now2Str } from '@/lib/comm';
+import { FullScreenOrRecover, ExitFullScreen, Now2Str } from '@/lib/comm';
 import { GuacdClient, GuacdViewPort } from "@/lib/guacd/guacd"
 import { onMounted, ref, reactive, onUnmounted, computed } from 'vue'
 import { Close, FullScreen, Folder, FolderOpened, Tickets, SwitchFilled } from "@element-plus/icons-vue"
 
 import type { SFTPFileInfo } from '@/lib/guacd/filesystem'
 import type { RemoteConfigInfo } from '@/lib/guacd/client';
-import { fa } from 'element-plus/es/locale';
 
 interface FSInfo {
     type: string
@@ -146,6 +149,33 @@ const fsDlgLog = ref(['log'])
 const fsDlgLogData = reactive<FSLogInfo[]>([])
 const fsDlgSearchName = ref('')
 
+//控制按键
+const theme = ref('#00ff00');
+const position = ref('top right');
+const column = ref(1);
+const events = ref([
+    {
+        icon: '[ ]',
+        text: '全屏',
+        handle: (e: any) => onFullScreenOrRecover(),
+    },
+    {
+        icon: 'M',
+        text: '管理',
+        handle: (e: any) => onSendCtrlAltDel(),
+    },
+    {
+        icon: 'F',
+        text: '文件',
+        handle: (e: any) => onFilesystem(),
+    },
+    {
+        icon: 'X',
+        text: '关闭',
+        handle: (e: any) => onCloseConn(),
+    },
+])
+
 const fsDlgDataObj = computed(function () {
     try {
         let regex = new RegExp(fsDlgSearchName.value)
@@ -202,7 +232,7 @@ function onOpen() {
         fsDlgShow.value = false
         clientViewPort = new GuacdViewPort(viewport.value, client!)
         clientViewPort.SetDisplay(display.value, displayStyle)
-        clientViewPort.SetDrawer(drawer.value, drawerStyle)
+        //clientViewPort.SetDrawer(drawer.value, drawerStyle)
         clientViewPort.Install()
     })
 
@@ -267,7 +297,7 @@ function rowFSDBClick(fsInfo: FSInfo) {
             {
                 confirmButtonText: '下载',
                 cancelButtonText: '取消',
-                type: 'warning',
+                type: 'warning'
             }
         ).then(() => {
             const logMsg: FSLogInfo = { cmd: "下载", time: Now2Str() }
@@ -356,7 +386,6 @@ function onSendCtrlAltDel() {
 //文件系统
 function onFilesystem() {
     fsDlgLoading.value = true
-    debugger
     client?.GetFileSystem()?.CD(fsCurPath.value, function (fileList) {
         fsDlgLoading.value = false
         fsDlgSearchName.value = ''
@@ -371,11 +400,13 @@ function onFilesystem() {
 
 //全屏
 function onFullScreenOrRecover() {
-    FullScreenOrRecover(viewport.value)
+    //此处必须使用document.documentElement，否则其他元素无法置顶
+    FullScreenOrRecover(document.documentElement)
 }
 
 //关闭连接
 function onCloseConn() {
+    ExitFullScreen()
     client?.GetFileSystem()?.UnInstall()
     client?.Disconn()
     client = null
@@ -422,11 +453,11 @@ function onCloseConn() {
   
 <style>
 /* 修改el-dialog的样式不能使用scoped */
-.remoteDlg .el-dialog__header {
+.remoteDlg>.el-dialog__header {
     padding: 0px;
 }
 
-.remoteDlg .el-dialog__body {
+.remoteDlg>.el-dialog__body {
     padding: 0px;
 }
 </style>

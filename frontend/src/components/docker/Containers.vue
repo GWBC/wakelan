@@ -14,58 +14,94 @@
             </el-form-item>
         </el-form>
     </el-dialog>
-    <Terminal v-model="logShow" :title="logTitle" :url="logUrl" :only-read="true"/>
-    <Terminal v-model="termShow" :title="termTitle" :url="termUrl" :only-read="false"/>
-    <el-card class="h-full" body-class="h-full !pb-1">
+    <Terminal v-model="logShow" :title="logTitle" :url="logUrl" />
+    <Terminal v-model="termShow" :title="termTitle" :url="termUrl" :only-read="false" :auto-exit="true" />
+    <el-card v-loading="dataLoding" element-loading-background="rgba(255, 255, 255, 0.5)" :element-loading-svg="dataSvg"
+        element-loading-svg-view-box="-10, -10, 50, 50" class="h-full" body-class="h-full !pb-1">
         <el-table class="!h-full" :data="containerDatas" :row-key="(row: ContainerInfo) => row.id"
             :expand-row-keys="expandRow" empty-text=" " stripe @expand-change="onClick" @row-click="onClick">
             <el-table-column type="expand">
                 <template #default="scope">
-                    <div class="ml-16 mr-16">
+                    <div class="ml-16 mr-16 container-expand">
                         <el-collapse v-model="detailsShow">
                             <el-collapse-item name="operation">
                                 <template #title>
                                     <span class="text-gray-500 text-sm font-bold">操作</span>
                                 </template>
-                                <el-button type="warning" @click="onTerminal(scope.row)">
-                                    <el-icon size="16">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
-                                            <rect x="32" y="48" width="448" height="416" rx="48" ry="48" fill="none"
-                                                stroke="currentColor" stroke-linejoin="round" stroke-width="32" />
-                                            <path fill="none" stroke="currentColor" stroke-linecap="round"
-                                                stroke-linejoin="round" stroke-width="32"
-                                                d="M96 112l80 64-80 64M192 240h64" />
-                                        </svg>
-                                    </el-icon>
-                                </el-button>
-                                <el-button type="success" @click="onLog(scope.row)">
-                                    <el-icon size="16">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
-                                            <circle cx="128" cy="256" r="96" fill="none" stroke="currentColor"
-                                                stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
-                                            <circle cx="384" cy="256" r="96" fill="none" stroke="currentColor"
-                                                stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
-                                            <path fill="none" stroke="currentColor" stroke-linecap="round"
-                                                stroke-linejoin="round" stroke-width="32" d="M128 352h256" />
-                                        </svg>
-                                    </el-icon>
-                                </el-button>
-                                <el-button type="primary" @click="onEdit(scope.row)">
-                                    <el-icon size="16">
-                                        <Edit />
-                                    </el-icon>
-                                </el-button>
-                                <el-button type="danger" @click="onDelete(scope.row)">
-                                    <el-icon size="16">
-                                        <Delete />
-                                    </el-icon>
-                                </el-button>
+                                <div class="btn-container">
+                                    <el-button color="#000000" :disabled="scope.row.state != 'running'"
+                                        @click="onTerminal(scope.row)">
+                                        <el-icon :size="iconSize">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
+                                                <rect x="32" y="48" width="448" height="416" rx="48" ry="48" fill="none"
+                                                    stroke="currentColor" stroke-linejoin="round" stroke-width="32" />
+                                                <path fill="none" stroke="currentColor" stroke-linecap="round"
+                                                    stroke-linejoin="round" stroke-width="32"
+                                                    d="M96 112l80 64-80 64M192 240h64" />
+                                            </svg>
+                                        </el-icon>
+                                    </el-button>
+                                    <el-button color="#626aef" @click="onLog(scope.row)">
+                                        <el-icon :size="iconSize">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
+                                                <circle cx="128" cy="256" r="96" fill="none" stroke="currentColor"
+                                                    stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
+                                                <circle cx="384" cy="256" r="96" fill="none" stroke="currentColor"
+                                                    stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
+                                                <path fill="none" stroke="currentColor" stroke-linecap="round"
+                                                    stroke-linejoin="round" stroke-width="32" d="M128 352h256" />
+                                            </svg>
+                                        </el-icon>
+                                    </el-button>
+                                    <el-button v-if="scope.row.stat == 'running'" color="#337ecc" @click="onStop(scope.row)">
+                                        <el-icon :size="iconSize">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
+                                                <path
+                                                    d="M448 256c0-106-86-192-192-192S64 150 64 256s86 192 192 192 192-86 192-192z"
+                                                    fill="none" stroke="currentColor" stroke-miterlimit="10"
+                                                    stroke-width="32" />
+                                                <path
+                                                    d="M310.4 336H201.6a25.62 25.62 0 01-25.6-25.6V201.6a25.62 25.62 0 0125.6-25.6h108.8a25.62 25.62 0 0125.6 25.6v108.8a25.62 25.62 0 01-25.6 25.6z" />
+                                            </svg>
+                                        </el-icon>
+                                    </el-button>
+                                    <el-button v-else color="#337ecc" @click="onStart(scope.row)">
+                                        <el-icon :size="iconSize">
+                                            <VideoPlay />
+                                        </el-icon>
+                                    </el-button>
+                                    <el-button color="#337ecc" @click="onRestart(scope.row)">
+                                        <el-icon :size="iconSize">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
+                                                <path d="M288 193s12.18-6-32-6a80 80 0 1080 80" fill="none"
+                                                    stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10"
+                                                    stroke-width="28" />
+                                                <path fill="none" stroke="currentColor" stroke-linecap="round"
+                                                    stroke-linejoin="round" stroke-width="28" d="M256 149l40 40-40 40" />
+                                                <path
+                                                    d="M256 64C150 64 64 150 64 256s86 192 192 192 192-86 192-192S362 64 256 64z"
+                                                    fill="none" stroke="currentColor" stroke-miterlimit="10"
+                                                    stroke-width="32" />
+                                            </svg>
+                                        </el-icon>
+                                    </el-button>
+                                    <el-button color="#337ecc" @click="onEdit(scope.row)">
+                                        <el-icon :size="iconSize">
+                                            <Edit />
+                                        </el-icon>
+                                    </el-button>
+                                    <el-button type="danger" @click="onDelete(scope.row)">
+                                        <el-icon :size="iconSize">
+                                            <Delete />
+                                        </el-icon>
+                                    </el-button>
+                                </div>
                             </el-collapse-item>
                             <el-collapse-item name="network">
                                 <template #title>
                                     <span class="text-gray-500 text-sm font-bold">网络</span>
                                 </template>
-                                <el-table :data="scope.row.networks" empty-text=" ">
+                                <el-table class="extern-data" :data="scope.row.networks" empty-text=" ">
                                     <el-table-column prop="name" label="名称" />
                                     <el-table-column prop="mac" label="硬件地址" />
                                     <el-table-column prop="ip" label="地址" />
@@ -130,7 +166,7 @@ import { onMounted, ref, reactive, nextTick } from 'vue'
 import { AsyncFetch } from '@/lib/comm'
 import Terminal from '@/components/docker/Terminal.vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { Edit, Delete } from '@element-plus/icons-vue'
+import { Edit, Delete, VideoPlay, VideoPause } from '@element-plus/icons-vue'
 
 interface PortInfo {
     ip: string
@@ -192,6 +228,90 @@ const props = defineProps<{ group: string }>()
 const expandRow = ref<string[]>([])
 const detailsShow = ref(["network", "operation", "volume", "v4", "v6"])
 
+const iconSize = ref(20)
+const dataLoding = ref(false)
+const dataSvg = ref(`
+<path class="path" d="
+          M 30 15
+          L 28 17
+          M 25.61 25.61
+          A 15 15, 0, 0, 1, 15 30
+          A 15 15, 0, 1, 1, 27.99 7.5
+          L 15 15
+        " style="stroke-width: 4px; fill: rgba(0, 0, 0, 0)"/>
+`)
+
+function onStop(row: ContainerInfo) {
+    ElMessageBox.confirm(
+        `是否停止容器：${row.name}`,
+        `停止`,
+        {
+            confirmButtonText: '停止',
+            cancelButtonText: '取消',
+            type: 'warning',
+        }
+    ).then(() => {
+        dataLoding.value = true
+        AsyncFetch(`${props.group}operContainer?name=${row.name}&oper=stop`, null).then(() => {
+            ElMessage.success(`停止容器 ${row.name} 成功`)
+            containerDatas.value.map(item => {
+                if (item.name == row.name) {
+                    item.state = 'exited'
+                }
+                return item
+            })
+
+            dataLoding.value = false
+        }).catch(err => {
+            dataLoding.value = false
+        })
+    }).catch(() => {
+    })
+}
+
+function onStart(row: ContainerInfo) {
+    dataLoding.value = true
+    AsyncFetch(`${props.group}operContainer?name=${row.name}&oper=start`, null).then(() => {
+        ElMessage.success(`启动容器 ${row.name} 成功`)
+        containerDatas.value.map(item => {
+            if (item.name == row.name) {
+                item.state = 'running'
+            }
+            return item
+        })
+        dataLoding.value = false
+    }).catch(err => {
+        dataLoding.value = false
+    })
+}
+
+function onRestart(row: ContainerInfo) {
+    ElMessageBox.confirm(
+        `是否重启容器：${row.name}`,
+        `重启`,
+        {
+            confirmButtonText: '重启',
+            cancelButtonText: '取消',
+            type: 'warning',
+        }
+    ).then(() => {
+        dataLoding.value = true
+        AsyncFetch(`${props.group}operContainer?name=${row.name}&oper=restart`, null).then(() => {
+            ElMessage.success(`重启容器 ${row.name} 成功`)
+            containerDatas.value.map(item => {
+                if (item.name == row.name) {
+                    item.state = 'running'
+                }
+                return item
+            })
+            dataLoding.value = false
+        }).catch(err => {
+            dataLoding.value = false
+        })
+    }).catch(() => {
+    })
+}
+
 function onDlgOpen() {
     nextTick(() => {
         //由于dlg自动焦点在标题上，需要自己实现获取焦点
@@ -210,13 +330,13 @@ function newFormat(value: string | number): string {
 
 function onTerminal(row: ContainerInfo) {
     termTitle.value = `${row.name} 终端`
-    termUrl.value = `ws://${window.location.host}/${props.group}enterContainer?name=${row.name}&rows=100&cols=200`
+    termUrl.value = `ws://${window.location.host}/${props.group}enterContainer?name=${row.name}`
     termShow.value = true
 }
 
 function onLog(row: ContainerInfo) {
     logTitle.value = `${row.name} 日志`
-    logUrl.value = `ws://${window.location.host}/${props.group}getLogsContainer?name=${row.name}&rows=100&cols=200`
+    logUrl.value = `ws://${window.location.host}/${props.group}getLogsContainer?name=${row.name}`
     logShow.value = true
 }
 
@@ -230,6 +350,7 @@ function onEditModify(name: string, newName: string) {
         return
     }
 
+    dataLoding.value = true
     AsyncFetch(`${props.group}renameContainer?old=${name}&new=${newName}`, null).then(() => {
         ElMessage.success(`容器 ${name} 重命名成功`)
         containerDatas.value = containerDatas.value.map(item => {
@@ -239,7 +360,9 @@ function onEditModify(name: string, newName: string) {
             return item
         })
         editDlg.value = false
+        dataLoding.value = false
     }).catch(err => {
+        dataLoding.value = false
     })
 }
 
@@ -252,7 +375,7 @@ function onEdit(row: ContainerInfo) {
 
 function onDelete(row: ContainerInfo) {
     ElMessageBox.confirm(
-        `是否删除容：${row.name}`,
+        `是否删除容器：${row.name}`,
         `删除`,
         {
             confirmButtonText: '删除',
@@ -260,10 +383,13 @@ function onDelete(row: ContainerInfo) {
             type: 'warning',
         }
     ).then(() => {
+        dataLoding.value = true
         AsyncFetch(`${props.group}delContainer?name=${row.name}`, null).then(() => {
             ElMessage.success(`删除容器 ${row.name} 成功`)
             containerDatas.value = containerDatas.value.filter(item => item.name != row.name)
+            dataLoding.value = false
         }).catch(err => {
+            dataLoding.value = false
         })
     }).catch(() => {
     })
@@ -283,8 +409,12 @@ function onClick(row: ContainerInfo) {
 }
 
 function getDatas() {
+    dataLoding.value = true
     AsyncFetch<ContainerInfo[]>(`${props.group}getContainers`, null).then((infos) => {
         containerDatas.value = infos
+        dataLoding.value = false
+    }).catch(err => {
+        dataLoding.value = false
     })
 }
 
@@ -330,4 +460,20 @@ onMounted(() => {
     margin: 0px;
     padding: 0px;
 }
+</style>
+
+<style scoped>
+/* 设置操作button的样式 */
+.btn-container {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.btn-container button {
+    flex: 1;
+    min-width: 45px;
+    max-width: 45px;
+    margin: 6px !important;
+}
+
 </style>

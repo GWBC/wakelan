@@ -293,8 +293,46 @@ func (d *DockerClient) RenameContainer(c *gin.Context) {
 	})
 }
 
+// 操作容器
+func (d *DockerClient) OperContainer(c *gin.Context) {
+	d.loadConfig()
+
+	name := c.Query("name")
+	t := c.Query("oper")
+
+	if len(name) == 0 || len(t) == 0 {
+		c.JSON(200, gin.H{
+			"err": errors.New("name or type is empty"),
+		})
+
+		return
+	}
+
+	var err error
+
+	if t == "start" {
+		err = d.cli.StartlContainer(name)
+	} else if t == "stop" {
+		err = d.cli.StopContainer(name)
+	} else {
+		err = d.cli.RestartContainer(name)
+	}
+
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err": "",
+	})
+}
+
 // 获取容器日志
-func (d *DockerClient) getContainerLogs(c *gin.Context) {
+func (d *DockerClient) GetContainerLogs(c *gin.Context) {
 	name := c.Query("name")
 	if len(name) == 0 {
 		c.JSON(200, gin.H{
@@ -353,7 +391,7 @@ func (d *DockerClient) getContainerLogs(c *gin.Context) {
 			//使用tty，只有一种格式，直接转发
 			if dec.Config.Tty {
 				n, err := r.Read(buf)
-				if err != nil {
+				if err != nil && n == 0 {
 					return err
 				}
 
@@ -413,7 +451,7 @@ func (d *DockerClient) probeContainerTerm(name string) string {
 }
 
 // 进入容器终端
-func (d *DockerClient) enterContainer(c *gin.Context) {
+func (d *DockerClient) EnterContainer(c *gin.Context) {
 	name := c.Query("name")
 	if len(name) == 0 {
 		c.JSON(200, gin.H{
@@ -459,7 +497,7 @@ func (d *DockerClient) enterContainer(c *gin.Context) {
 		Columns:  uint(cols),
 		ReadFun: func(r io.Reader) error {
 			n, err := r.Read(buf)
-			if err != nil {
+			if err != nil && n == 0 {
 				return err
 			}
 

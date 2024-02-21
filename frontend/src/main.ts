@@ -14,6 +14,9 @@ import ElementPlus from 'element-plus'
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 
+//悬浮球
+import FloatingBall from 'vue3-floating-ball';
+
 const app = createApp(App)
 
 //注册组件
@@ -21,6 +24,7 @@ for (const [key, component] of (<any>Object).entries(ElementPlusIconsVue)) {
     app.component(key, component)
 }
 
+app.use(FloatingBall)
 app.use(ElementPlus, { locale: zhCn })
 app.use(router)
 

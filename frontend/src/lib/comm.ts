@@ -154,6 +154,12 @@ export function FullScreenOrRecover(el: any) {
     }
 }
 
+export function ExitFullScreen() {
+    if (document.fullscreenElement) {
+        document.exitFullscreen()
+    }
+}
+
 //获取当前字符串时间
 export function Now2Str(): string {
     const now = new Date()

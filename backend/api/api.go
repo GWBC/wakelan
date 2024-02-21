@@ -80,8 +80,9 @@ func (a *Web) SetDockerClientApi(r *gin.Engine) {
 	group.GET("/getContainers", api.GetContainers)
 	group.GET("/delContainer", api.DelContainer)
 	group.GET("/renameContainer", api.RenameContainer)
-	group.GET("/getLogsContainer", api.getContainerLogs)
-	group.GET("/enterContainer", api.enterContainer)
+	group.GET("/getLogsContainer", api.GetContainerLogs)
+	group.GET("/enterContainer", api.EnterContainer)
+	group.GET("/operContainer", api.OperContainer)
 }
 
 ///////////////////////////////////////////////////////////////////

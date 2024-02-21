@@ -7,7 +7,7 @@
 
 <script setup lang="ts">
 import { WBSocket } from '@/lib/websocket'
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 
@@ -15,12 +15,25 @@ const xtermDiv = ref()
 let wbs: WBSocket | null = null
 let resizeObserver!: ResizeObserver
 
-const props = defineProps<{
-    modelValue: boolean
-    url: string
-    title: string
-    onlyRead: boolean
-}>()
+const props = defineProps({
+    modelValue: Boolean,
+    url: {
+        type: String,
+        required: true
+    },
+    title: {
+        type: String,
+        default: ''
+    },
+    onlyRead: {
+        type: Boolean,
+        default: true
+    },
+    autoExit: {
+        type: Boolean,
+        default: false
+    }
+})
 
 const emit = defineEmits<{
     'update:modelValue': [boolean],
@@ -56,6 +69,8 @@ function onOpen() {
     terminal.loadAddon(fitAddon)
     terminal.open(xtermDiv.value)
 
+    fitAddon.fit()
+
     resizeObserver = new ResizeObserver(entries => {
         fitAddon.fit()
     })
@@ -63,20 +78,16 @@ function onOpen() {
     resizeObserver.observe(xtermDiv.value)
 
     wbs = new WBSocket(0)
+
     wbs.SetMsgFun((event: MessageEvent) => {
-        // console.log(event.data)
-        // var reader = new FileReader()
-
-        // reader.onload = function (e) {
-        //     terminal.write(e.target?.result as string)
-        // }
-
-        // // 开始读取 Blob 对象
-        // reader.readAsText(event.data);
-
         terminal.write(event.data.toString())
     })
-    wbs.Conn(props.url)
+
+    const urlObj = new URL(props.url)
+    urlObj.searchParams.append("rows", terminal.rows.toString())
+    urlObj.searchParams.append("cols", terminal.cols.toString())
+
+    wbs.Conn(urlObj.href)
 
     wbs.SetOpenFun(() => {
         terminal.onResize((event) => {
@@ -88,18 +99,28 @@ function onOpen() {
 
             wbs?.WebSocketObj()?.send(JSON.stringify(data))
         })
+
+        if (!props.onlyRead) {
+            terminal.onData(msg => {
+                const data = {
+                    cmd: "data",
+                    data: msg
+                }
+
+                wbs?.WebSocketObj()?.send(JSON.stringify(data))
+            })
+        }
+
+        terminal.focus()
     })
 
-    if (!props.onlyRead) {
-        terminal.onData(msg => {
-            const data = {
-                cmd: "data",
-                data: msg
-            }
-
-            wbs?.WebSocketObj()?.send(JSON.stringify(data))
-        })
-    }
+    wbs.SetCloseFun((event: Event, reconnTime: number) => {
+        if(props.autoExit){
+            show.value = false
+        }        
+        
+        return false
+    })
 
     emit('open', terminal, wbs)
 }
