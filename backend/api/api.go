@@ -83,6 +83,10 @@ func (a *Web) SetDockerClientApi(r *gin.Engine) {
 	group.GET("/getLogsContainer", api.GetContainerLogs)
 	group.GET("/enterContainer", api.EnterContainer)
 	group.GET("/operContainer", api.OperContainer)
+	group.GET("/getNetworkCards", api.GetNewtworkCards)
+	group.GET("/delNetworkCard", api.DelNetworkCard)
+	group.GET("/addNetworkCard", api.AddNetworkCard)
+	group.GET("/localNetworkCard", api.LocalNetworkCard)
 }
 
 ///////////////////////////////////////////////////////////////////

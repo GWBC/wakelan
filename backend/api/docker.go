@@ -65,6 +65,32 @@ type ContainerInfo struct {
 	CreateTime string       `json:"create_time"`
 }
 
+type IPAMConfig struct {
+	Subnet  string `json:"subnet"`
+	IPRange string `json:"iprange"`
+	Gateway string `json:"gateway"`
+}
+
+type NetworkCardInfo struct {
+	Name    string            `json:"name"`
+	ID      string            `json:"id"`
+	Created string            `json:"created"`
+	Scope   string            `json:"scope"`
+	Driver  string            `json:"driver"`
+	Options map[string]string `json:"options"`
+	Configs []IPAMConfig      `json:"configs"`
+}
+
+type AddrNet struct {
+	IP     string `json:"ip"`
+	Subnet string `json:"subnet"`
+}
+
+type LocalNetworkInfo struct {
+	Name  string    `json:"name"`
+	Addrs []AddrNet `json:"addrs"`
+}
+
 type DockerClient struct {
 	cli *comm.DockerClient
 }
@@ -80,6 +106,142 @@ func (d *DockerClient) loadConfig() {
 	if cfg.DockerEnableTCP {
 		d.cli.SetHost(fmt.Sprintf("tcp://%s:%d", cfg.DockerSvrIP, cfg.DockerSvrPort))
 	}
+}
+
+// 获取宿主机网卡信息
+func (d *DockerClient) LocalNetworkCard(c *gin.Context) {
+	faces, err := net.Interfaces()
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	infos := []LocalNetworkInfo{}
+
+	for _, v := range faces {
+		flags := v.Flags & net.FlagLoopback
+		if flags == net.FlagLoopback {
+			continue
+		}
+
+		info := LocalNetworkInfo{}
+		info.Name = v.Name
+		addrs, err := v.Addrs()
+		if err != nil {
+			continue
+		}
+
+		info.Addrs = []AddrNet{}
+
+		for _, addr := range addrs {
+			_, subnet, err := net.ParseCIDR(addr.String())
+			if err != nil {
+				continue
+			}
+
+			info.Addrs = append(info.Addrs, AddrNet{IP: strings.Split(addr.String(), "/")[0], Subnet: subnet.String()})
+		}
+
+		infos = append(infos, info)
+	}
+
+	c.JSON(200, gin.H{
+		"err":   "",
+		"infos": infos,
+	})
+}
+
+// 添加网卡
+func (d *DockerClient) AddNetworkCard(c *gin.Context) {
+	d.loadConfig()
+
+	info := comm.DockerNetCreate{}
+	info.Name = c.Query("name")
+	info.Driver = c.Query("driver")
+	info.Parent = c.Query("parent")
+	info.Subnet = c.Query("subnet")
+	info.Gateway = c.Query("gateway")
+
+	err := d.cli.AddNetworkCard(&info)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err": "",
+	})
+}
+
+// 删除网卡
+func (d *DockerClient) DelNetworkCard(c *gin.Context) {
+	d.loadConfig()
+
+	name := c.Query("name")
+
+	err := d.cli.DelNetworkCard(name)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err": "",
+	})
+}
+
+// 获取网卡信息
+func (d *DockerClient) GetNewtworkCards(c *gin.Context) {
+	d.loadConfig()
+
+	cards, err := d.cli.GetNetworkCards()
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	infos := []NetworkCardInfo{}
+
+	for _, card := range cards {
+		info := NetworkCardInfo{}
+		info.Name = card.Name
+		info.ID = card.ID[:12]
+		info.Created = card.Created.Format(comm.TimeFormat)
+		info.Scope = card.Scope
+		info.Driver = card.Driver
+		info.Options = card.Options
+		info.Configs = []IPAMConfig{}
+		for _, v := range card.IPAM.Config {
+			info.Configs = append(info.Configs, IPAMConfig{
+				Subnet:  v.Subnet,
+				IPRange: v.IPRange,
+				Gateway: v.Gateway,
+			})
+		}
+
+		infos = append(infos, info)
+	}
+
+	sort.Slice(infos, func(i, j int) bool {
+		return infos[i].Created > infos[j].Created
+	})
+
+	c.JSON(200, gin.H{
+		"err":   "",
+		"infos": infos,
+	})
 }
 
 // 获取镜像信息

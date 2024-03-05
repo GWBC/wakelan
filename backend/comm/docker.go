@@ -288,8 +288,8 @@ func (d *DockerClient) ImportImage(fileName string) error {
 }
 
 // //////////////////////////////////////////////////////////////////
-// 查询网络
-func (d *DockerClient) GetNetworks() ([]types.NetworkResource, error) {
+// 查询网卡
+func (d *DockerClient) GetNetworkCards() ([]types.NetworkResource, error) {
 	cli, err := d.conn()
 	if err != nil {
 		return []types.NetworkResource{}, err
@@ -308,8 +308,8 @@ type DockerNetCreate struct {
 	Parent  string //父网卡
 }
 
-// 创建网络
-func (d *DockerClient) AddNetwork(cfg *DockerNetCreate) error {
+// 创建网卡
+func (d *DockerClient) AddNetworkCard(cfg *DockerNetCreate) error {
 	cli, err := d.conn()
 	if err != nil {
 		return err
@@ -319,22 +319,28 @@ func (d *DockerClient) AddNetwork(cfg *DockerNetCreate) error {
 
 	netCfg := types.NetworkCreate{}
 	netCfg.Driver = cfg.Driver
-	netCfg.IPAM = &network.IPAM{
-		Config: []network.IPAMConfig{{
-			Subnet:  cfg.Subnet,
-			Gateway: cfg.Gateway,
-		}},
+	netCfg.Options = map[string]string{}
+
+	if len(cfg.Gateway) != 0 && len(cfg.Subnet) != 0 {
+		netCfg.IPAM = &network.IPAM{
+			Config: []network.IPAMConfig{{
+				Subnet:  cfg.Subnet,
+				Gateway: cfg.Gateway,
+			}},
+		}
 	}
 
-	netCfg.Options = map[string]string{"parent": cfg.Parent}
+	if len(cfg.Parent) != 0 {
+		netCfg.Options["parent"] = cfg.Parent
+	}
 
 	_, err = cli.NetworkCreate(context.Background(), cfg.Name, netCfg)
 
 	return err
 }
 
-// 删除网络
-func (d *DockerClient) DelNetwork(name string) error {
+// 删除网卡
+func (d *DockerClient) DelNetworkCard(name string) error {
 	cli, err := d.conn()
 	if err != nil {
 		return err
