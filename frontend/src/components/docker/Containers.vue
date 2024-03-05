@@ -18,132 +18,107 @@
     <Terminal v-model="termShow" :title="termTitle" :url="termUrl" :only-read="false" :auto-exit="true" />
     <el-card v-loading="dataLoding" element-loading-background="rgba(255, 255, 255, 0.5)" :element-loading-svg="dataSvg"
         element-loading-svg-view-box="-10, -10, 50, 50" class="h-full" body-class="h-full !pb-1">
-        <el-table class="!h-full" :data="containerDatas" :row-key="(row: ContainerInfo) => row.id"
+        <el-table table-layout="auto" class="!h-full" :data="containerDatas" :row-key="(row: ContainerInfo) => row.id"
             :expand-row-keys="expandRow" empty-text=" " stripe @expand-change="onClick" @row-click="onClick">
             <el-table-column type="expand">
                 <template #default="scope">
-                    <div class="ml-16 mr-16 container-expand">
-                        <el-collapse v-model="detailsShow">
-                            <el-collapse-item name="operation">
-                                <template #title>
-                                    <span class="text-gray-500 text-sm font-bold">操作</span>
-                                </template>
-                                <div class="btn-container">
-                                    <el-button color="#000000" :disabled="scope.row.state != 'running'"
-                                        @click="onTerminal(scope.row)">
-                                        <el-icon :size="iconSize">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
-                                                <rect x="32" y="48" width="448" height="416" rx="48" ry="48" fill="none"
-                                                    stroke="currentColor" stroke-linejoin="round" stroke-width="32" />
-                                                <path fill="none" stroke="currentColor" stroke-linecap="round"
-                                                    stroke-linejoin="round" stroke-width="32"
-                                                    d="M96 112l80 64-80 64M192 240h64" />
-                                            </svg>
-                                        </el-icon>
-                                    </el-button>
-                                    <el-button color="#626aef" @click="onLog(scope.row)">
-                                        <el-icon :size="iconSize">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
-                                                <circle cx="128" cy="256" r="96" fill="none" stroke="currentColor"
-                                                    stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
-                                                <circle cx="384" cy="256" r="96" fill="none" stroke="currentColor"
-                                                    stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
-                                                <path fill="none" stroke="currentColor" stroke-linecap="round"
-                                                    stroke-linejoin="round" stroke-width="32" d="M128 352h256" />
-                                            </svg>
-                                        </el-icon>
-                                    </el-button>
-                                    <el-button v-if="scope.row.stat == 'running'" color="#337ecc" @click="onStop(scope.row)">
-                                        <el-icon :size="iconSize">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
-                                                <path
-                                                    d="M448 256c0-106-86-192-192-192S64 150 64 256s86 192 192 192 192-86 192-192z"
-                                                    fill="none" stroke="currentColor" stroke-miterlimit="10"
-                                                    stroke-width="32" />
-                                                <path
-                                                    d="M310.4 336H201.6a25.62 25.62 0 01-25.6-25.6V201.6a25.62 25.62 0 0125.6-25.6h108.8a25.62 25.62 0 0125.6 25.6v108.8a25.62 25.62 0 01-25.6 25.6z" />
-                                            </svg>
-                                        </el-icon>
-                                    </el-button>
-                                    <el-button v-else color="#337ecc" @click="onStart(scope.row)">
-                                        <el-icon :size="iconSize">
-                                            <VideoPlay />
-                                        </el-icon>
-                                    </el-button>
-                                    <el-button color="#337ecc" @click="onRestart(scope.row)">
-                                        <el-icon :size="iconSize">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
-                                                <path d="M288 193s12.18-6-32-6a80 80 0 1080 80" fill="none"
-                                                    stroke="currentColor" stroke-linecap="round" stroke-miterlimit="10"
-                                                    stroke-width="28" />
-                                                <path fill="none" stroke="currentColor" stroke-linecap="round"
-                                                    stroke-linejoin="round" stroke-width="28" d="M256 149l40 40-40 40" />
-                                                <path
-                                                    d="M256 64C150 64 64 150 64 256s86 192 192 192 192-86 192-192S362 64 256 64z"
-                                                    fill="none" stroke="currentColor" stroke-miterlimit="10"
-                                                    stroke-width="32" />
-                                            </svg>
-                                        </el-icon>
-                                    </el-button>
-                                    <el-button color="#337ecc" @click="onEdit(scope.row)">
-                                        <el-icon :size="iconSize">
-                                            <Edit />
-                                        </el-icon>
-                                    </el-button>
-                                    <el-button type="danger" @click="onDelete(scope.row)">
-                                        <el-icon :size="iconSize">
-                                            <Delete />
-                                        </el-icon>
-                                    </el-button>
-                                </div>
-                            </el-collapse-item>
-                            <el-collapse-item name="network">
-                                <template #title>
-                                    <span class="text-gray-500 text-sm font-bold">网络</span>
-                                </template>
-                                <el-table class="extern-data" :data="scope.row.networks" empty-text=" ">
-                                    <el-table-column prop="name" label="名称" />
-                                    <el-table-column prop="mac" label="硬件地址" />
-                                    <el-table-column prop="ip" label="地址" />
-                                    <el-table-column prop="gateway" label="网关" />
-                                    <el-table-column prop="dns" label="域名" />
-                                </el-table>
-                            </el-collapse-item>
-                            <el-collapse-item name="volume">
-                                <template #title>
-                                    <span class="text-gray-500 text-sm font-bold">目录映射</span>
-                                </template>
-                                <el-table :data="scope.row.volume_info" empty-text=" ">
-                                    <el-table-column prop="type" label="类型" />
-                                    <el-table-column prop="name" label="名称" />
-                                    <el-table-column prop="source" label="宿主目录" />
-                                    <el-table-column prop="destination" label="容器目录" />
-                                </el-table>
-                            </el-collapse-item>
-                            <el-collapse-item v-if="scope.row.v4ports.length > 0" name="v4">
-                                <template #title>
-                                    <span class="text-gray-500 text-sm font-bold">v4端口映射</span>
-                                </template>
-                                <el-table :data="scope.row.v4ports" empty-text=" ">
-                                    <el-table-column prop="type" label="协议" />
-                                    <el-table-column prop="ip" label="宿主地址" />
-                                    <el-table-column prop="public_port" label="宿主端口" />
-                                    <el-table-column prop="private_port" label="容器端口" />
-                                </el-table>
-                            </el-collapse-item>
-                            <el-collapse-item v-if="scope.row.v6ports.length > 0" name="v6">
-                                <template #title>
-                                    <span class="text-gray-500 text-sm font-bold">v6端口映射</span>
-                                </template>
-                                <el-table :data="scope.row.v6ports" empty-text=" ">
-                                    <el-table-column prop="type" label="协议" />
-                                    <el-table-column prop="ip" label="宿主地址" />
-                                    <el-table-column prop="public_port" label="宿主端口" />
-                                    <el-table-column prop="private_port" label="容器端口" />
-                                </el-table>
-                            </el-collapse-item>
-                        </el-collapse>
-                    </div>
+                    <el-tabs class="ml-16 mb-8" tab-position="top">
+                        <el-tab-pane label="控制台">
+                            <el-button color="#000000" :disabled="scope.row.state != 'running'"
+                                @click="onTerminal(scope.row)">
+                                <el-icon :size="iconSize">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
+                                        <rect x="32" y="48" width="448" height="416" rx="48" ry="48" fill="none"
+                                            stroke="currentColor" stroke-linejoin="round" stroke-width="32" />
+                                        <path fill="none" stroke="currentColor" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="32" d="M96 112l80 64-80 64M192 240h64" />
+                                    </svg>
+                                </el-icon>
+                            </el-button>
+                            <el-button color="#626aef" @click="onLog(scope.row)">
+                                <el-icon :size="iconSize">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
+                                        <circle cx="128" cy="256" r="96" fill="none" stroke="currentColor"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
+                                        <circle cx="384" cy="256" r="96" fill="none" stroke="currentColor"
+                                            stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
+                                        <path fill="none" stroke="currentColor" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="32" d="M128 352h256" />
+                                    </svg>
+                                </el-icon>
+                            </el-button>
+                            <el-button v-if="scope.row.stat == 'running'" color="#337ecc" @click="onStop(scope.row)">
+                                <el-icon :size="iconSize">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
+                                        <path d="M448 256c0-106-86-192-192-192S64 150 64 256s86 192 192 192 192-86 192-192z"
+                                            fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" />
+                                        <path
+                                            d="M310.4 336H201.6a25.62 25.62 0 01-25.6-25.6V201.6a25.62 25.62 0 0125.6-25.6h108.8a25.62 25.62 0 0125.6 25.6v108.8a25.62 25.62 0 01-25.6 25.6z" />
+                                    </svg>
+                                </el-icon>
+                            </el-button>
+                            <el-button v-else color="#337ecc" @click="onStart(scope.row)">
+                                <el-icon :size="iconSize">
+                                    <VideoPlay />
+                                </el-icon>
+                            </el-button>
+                            <el-button color="#337ecc" @click="onRestart(scope.row)">
+                                <el-icon :size="iconSize">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
+                                        <path d="M288 193s12.18-6-32-6a80 80 0 1080 80" fill="none" stroke="currentColor"
+                                            stroke-linecap="round" stroke-miterlimit="10" stroke-width="28" />
+                                        <path fill="none" stroke="currentColor" stroke-linecap="round"
+                                            stroke-linejoin="round" stroke-width="28" d="M256 149l40 40-40 40" />
+                                        <path d="M256 64C150 64 64 150 64 256s86 192 192 192 192-86 192-192S362 64 256 64z"
+                                            fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" />
+                                    </svg>
+                                </el-icon>
+                            </el-button>
+                            <el-button color="#337ecc" @click="onEdit(scope.row)">
+                                <el-icon :size="iconSize">
+                                    <Edit />
+                                </el-icon>
+                            </el-button>
+                            <el-button type="danger" @click="onDelete(scope.row)">
+                                <el-icon :size="iconSize">
+                                    <Delete />
+                                </el-icon>
+                            </el-button>
+                        </el-tab-pane>
+                        <el-tab-pane label="网络">
+                            <el-table table-layout="auto"  :data="scope.row.networks" empty-text=" " border>
+                                <el-table-column prop="name" label="名称" />
+                                <el-table-column prop="mac" label="硬件地址" />
+                                <el-table-column prop="ip" label="地址" />
+                                <el-table-column prop="gateway" label="网关" />
+                                <el-table-column prop="dns" label="域名" />
+                            </el-table>
+                        </el-tab-pane>
+                        <el-tab-pane label="目录映射">
+                            <el-table table-layout="auto"  :data="scope.row.volume_info" empty-text=" " border>
+                                <el-table-column prop="type" label="类型" />
+                                <el-table-column prop="name" label="名称" />
+                                <el-table-column prop="source" label="宿主目录" />
+                                <el-table-column prop="destination" label="容器目录" />
+                            </el-table>
+                        </el-tab-pane>
+                        <el-tab-pane label="IPv4映射">
+                            <el-table table-layout="auto"  :data="scope.row.v4ports" empty-text=" " border>
+                                <el-table-column prop="type" label="协议" />
+                                <el-table-column prop="ip" label="宿主地址" />
+                                <el-table-column prop="public_port" label="宿主端口" />
+                                <el-table-column prop="private_port" label="容器端口" />
+                            </el-table>
+                        </el-tab-pane>
+                        <el-tab-pane label="IPv6映射">
+                            <el-table table-layout="auto"  :data="scope.row.v6ports" empty-text=" " border>
+                                <el-table-column prop="type" label="协议" />
+                                <el-table-column prop="ip" label="宿主地址" />
+                                <el-table-column prop="public_port" label="宿主端口" />
+                                <el-table-column prop="private_port" label="容器端口" />
+                            </el-table>
+                        </el-tab-pane>
+                    </el-tabs>
                 </template>
             </el-table-column>
             <el-table-column label="" width="40">
@@ -226,7 +201,6 @@ const containerDatas = ref<ContainerInfo[]>([])
 const props = defineProps<{ group: string }>()
 
 const expandRow = ref<string[]>([])
-const detailsShow = ref(["network", "operation", "volume", "v4", "v6"])
 
 const iconSize = ref(20)
 const dataLoding = ref(false)
@@ -460,20 +434,9 @@ onMounted(() => {
     margin: 0px;
     padding: 0px;
 }
+
+.el-tabs__item{
+    color: gray;
+}
 </style>
 
-<style scoped>
-/* 设置操作button的样式 */
-.btn-container {
-    display: flex;
-    flex-wrap: wrap;
-}
-
-.btn-container button {
-    flex: 1;
-    min-width: 45px;
-    max-width: 45px;
-    margin: 6px !important;
-}
-
-</style>

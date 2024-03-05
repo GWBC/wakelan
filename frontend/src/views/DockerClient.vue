@@ -1,7 +1,6 @@
 <template>
   <MainPage>
     <template #header>
-
     </template>
 
     <template #main>
@@ -13,7 +12,7 @@
           <Containers v-if="curSelect=='container'" :group="group" />
         </el-tab-pane>
         <el-tab-pane class="h-full" name="network" label="网络">
-
+          <Networks v-if="curSelect=='network'" :group="group" />
         </el-tab-pane>
       </el-tabs>
     </template>
@@ -23,6 +22,7 @@
 <script setup lang="ts">
 import MainPage from '@/components/MainPage.vue'
 import Images from '@/components/docker/Images.vue'
+import Networks from '@/components/docker/Networks.vue'
 import Containers from '@/components/docker/Containers.vue'
 import { computed, onMounted, ref } from 'vue'
 import { AsyncFetch } from '@/lib/comm';

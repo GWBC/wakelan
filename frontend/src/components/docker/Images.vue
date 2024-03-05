@@ -1,6 +1,6 @@
 <template>
     <el-card class="h-full" body-class="h-full !pb-1">
-        <el-table class="!h-full" :data="imageDatas" stripe empty-text=" ">
+        <el-table table-layout="auto" class="!h-full" :data="imageDatas" stripe empty-text=" ">
             <el-table-column prop="id" label="ID" />
             <el-table-column prop="repostitory" label="仓库" />
             <el-table-column prop="tag" label="版本" />

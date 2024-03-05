@@ -1,7 +1,4 @@
 <template>
-    <floating-ball @mousedown.stop @mousemove.stop @touchstart.stop @touchend.stop @touchmove.stop v-if="showRemote"
-        :theme="theme" :position="position" :events="events" :column="column" />
-
     <el-dialog ref="fsDlg" @keydown="onFSKeyDown" @dragover.prevent v-model="fsDlgShow" :append-to-body="true">
         <template #header>
             <el-breadcrumb class="breadcrumb" separator=">">
@@ -41,8 +38,32 @@
         </el-collapse>
     </el-dialog>
 
+    <ContrlButton v-if="showRemote">
+        <el-button class="ctrl-button" type="info" @click="onSendCtrlAltDel">
+            <el-icon size="20">
+                <SwitchFilled />
+            </el-icon>
+            <span>CTRL+ALT+DEL</span>
+        </el-button>
+        <el-button v-show="showFilesystem" class="ctrl-button" type="info" @click="onFilesystem">
+            <el-icon size="20">
+                <Folder />
+            </el-icon>
+        </el-button>
+        <el-button class="ctrl-button" type="info" @click="onFullScreenOrRecover">
+            <el-icon size="20">
+                <FullScreen />
+            </el-icon>
+        </el-button>
+        <el-button class="ctrl-button" type="danger" @click="onCloseConn">
+            <el-icon size="20">
+                <Close />
+            </el-icon>
+        </el-button>
+    </ContrlButton>
+
     <el-dialog class="remoteDlg" v-model="showRemote" :close-on-press-escape="false" :fullscreen="true" :show-close="false"
-        :append-to-body="true" @open="onOpen" @close="onClose">
+        :append-to-body="true" destroy-on-close @open="onOpen" @close="onClose">
         <div ref="viewport" class="viewport" v-loading="isLoading" element-loading-text="连接中..."
             :element-loading-spinner="loadingSVG" element-loading-svg-view-box="-10, -10, 50, 50"
             element-loading-background="rgba(0, 0, 0, 0.7)">
@@ -86,7 +107,8 @@ import { onMounted, ref, reactive, onUnmounted, computed } from 'vue'
 import { Close, FullScreen, Folder, FolderOpened, Tickets, SwitchFilled } from "@element-plus/icons-vue"
 
 import type { SFTPFileInfo } from '@/lib/guacd/filesystem'
-import type { RemoteConfigInfo } from '@/lib/guacd/client';
+import type { RemoteConfigInfo } from '@/lib/guacd/client'
+import ContrlButton from '@/components/ContrlButton.vue'
 
 interface FSInfo {
     type: string
@@ -150,7 +172,7 @@ const fsDlgLogData = reactive<FSLogInfo[]>([])
 const fsDlgSearchName = ref('')
 
 //控制按键
-const theme = ref('#00ff00');
+const theme = ref('#F56C6C');
 const position = ref('top right');
 const column = ref(1);
 const events = ref([
@@ -193,6 +215,16 @@ const fsDlgDataObj = computed(function () {
         return fsDlgData
     }
 })
+
+const buttons = ref([
+    {
+        html: '<i class="fas fa-bars" />'
+    },
+    {
+        html: '<i class="fas fa-compass" />',
+        click: () => alert('hello')
+    }
+])
 
 const fsCurPathObj = computed(function () {
     let ret: FSInfo[] = []

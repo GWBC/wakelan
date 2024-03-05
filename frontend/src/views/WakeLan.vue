@@ -52,15 +52,15 @@
       <el-card class="navigation" body-class="navigation-body">
         <el-table class="!h-full" element-loading-background="rgba(255, 255, 255, 20)" v-loading="table_loading"
           :data="table_data_filter" stripe @row-dblclick="onOpenRemote" empty-text=" "
-          :default-sort="{ prop: 'ip', order: 'ascending' }" @sort-change="customSort">
-          <el-table-column width="48">
+          :default-sort="{ prop: 'ip', order: 'ascending' }" @sort-change="customSort" table-layout="auto">
+          <el-table-column>
             <template #default="scope">
               <el-button v-if="scope.row.edit" type="danger" size="small" :icon="Delete" circle
                 @click="deletePC(scope.row)" />
               <el-button v-else="scope.row.edit" type="info" size="small" disabled :icon="Delete" circle />
             </template>
           </el-table-column>
-          <el-table-column width="40">
+          <el-table-column>
             <template #default="scope">
               <el-icon v-show="scope.row.attach_info.star">
                 <StarFilled color="#67C23A" />
@@ -70,22 +70,22 @@
               </el-icon>
             </template>
           </el-table-column>
-          <el-table-column prop="ip" label="地址" width="180" sortable="custom" />
-          <el-table-column prop="mac" label="硬件地址" width="180" />
-          <el-table-column label="描述" width="380">
+          <el-table-column prop="ip" label="地址" sortable="custom" />
+          <el-table-column prop="mac" label="硬件地址" />
+          <el-table-column label="描述">
             <template #default="scope">
               <el-input v-if="scope.row.edit" placeholder="编辑描述" v-model="scope.row.attach_info.describe" />
               <el-text v-else-if="scope.row.attach_info.describe"> {{ scope.row.attach_info.describe }} </el-text>
               <el-text v-else> {{ scope.row.manuf }}</el-text>
             </template>
           </el-table-column>
-          <el-table-column label="" width="60">
+          <el-table-column label="">
             <template #default="scope">
               <div v-if="scope.row.online" class="w-3 h-3 rounded-full bg-green-400"></div>
               <div v-else class="w-3 h-3 rounded-full bg-red-400"></div>
             </template>
           </el-table-column>
-          <el-table-column label="编辑" width="80">
+          <el-table-column label="编辑">
             <template #default="scope">
               <el-switch @change="(val: boolean) => { editChange(val, scope.row) }" v-model="scope.row.edit"></el-switch>
             </template>
