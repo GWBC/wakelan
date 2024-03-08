@@ -26,7 +26,7 @@
     <template #header>
       <el-row :gutter="5">
         <el-col :xs="5" :sm="6" :md="3">
-          <el-input v-model="searchIP" placeholder="请输入筛选的IP地址" clearable />
+          <el-input v-model="searchIP" :prefix-icon="Search" placeholder="请输入筛选的IP地址" clearable />
         </el-col>
         <el-col :xs="16" :sm="16" :md="8">
           <el-row :gutter="5">
@@ -118,7 +118,7 @@
 import '@/assets/wakelan.css'
 import { Fetch, AsyncFetch } from '@/lib/comm'
 import { WBSocket } from '@/lib/websocket'
-import { Delete } from '@element-plus/icons-vue'
+import { Delete, Search } from '@element-plus/icons-vue'
 import Remote from '@/components/remote/Remote.vue'
 import RemoteConfig from '@/components/remote/RemoteConfig.vue'
 import { ElMessageBox, ElMessage } from 'element-plus'

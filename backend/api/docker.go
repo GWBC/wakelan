@@ -91,12 +91,45 @@ type LocalNetworkInfo struct {
 	Addrs []AddrNet `json:"addrs"`
 }
 
+type ExportPortInfo struct {
+	Proto string `json:"proto"`
+	Port  string `json:"port"`
+}
+
+type ImageDetailInfo struct {
+	Os           string           `json:"os"`
+	OsVersion    string           `json:"os_version"`
+	Size         int64            `json:"size"`
+	ExposedPorts []ExportPortInfo `json:"exposed_ports"`
+	Volumes      []string         `json:"volumes"`
+	WorkingDir   string           `json:"working_dir"`
+	Env          []string         `json:"env"`
+	Cmd          string           `json:"cmd"`
+}
+
+type PullLayerInfo struct {
+	Id        string `json:"id"`
+	Status    string `json:"status"`
+	CurSize   int    `json:"cur_size"`
+	TotalSize int    `json:"total_size"`
+}
+
+type PullLogInfo struct {
+	Name  string          `json:"name"`
+	Layer []PullLayerInfo `json:"layer"`
+}
+
 type DockerClient struct {
-	cli *comm.DockerClient
+	cli      *comm.DockerClient
+	pullChan chan string
+	pullLog  PullLogInfo
 }
 
 func (d *DockerClient) Init() error {
 	d.cli = &comm.DockerClient{}
+	d.pullLog = PullLogInfo{}
+	d.pullChan = make(chan string, 10)
+	d.ASyncPullImage()
 
 	return nil
 }
@@ -237,6 +270,250 @@ func (d *DockerClient) GetNewtworkCards(c *gin.Context) {
 	sort.Slice(infos, func(i, j int) bool {
 		return infos[i].Created > infos[j].Created
 	})
+
+	c.JSON(200, gin.H{
+		"err":   "",
+		"infos": infos,
+	})
+}
+
+func (d *DockerClient) ASyncPullImage() {
+	type Info struct {
+		Id     string `json:"id"`
+		Status string `json:"status"`
+
+		ProgressDetail struct {
+			Current int `json:"current"`
+			Total   int `json:"total"`
+		} `json:"progressDetail"`
+	}
+
+	go func() {
+		for v := range d.pullChan {
+			d.pullLog.Name = v
+			d.pullLog.Layer = []PullLayerInfo{}
+
+			err := d.cli.PullImage(v, func(r *bufio.Reader) error {
+				for {
+					s, err := r.ReadString('\n')
+					if err != nil {
+						if err == io.EOF {
+							break
+						}
+
+						return err
+					}
+
+					info := Info{}
+					err = json.Unmarshal([]byte(s), &info)
+					if err != nil {
+						continue
+					}
+
+					if info.ProgressDetail.Total == 0 {
+						continue
+					}
+
+					isFind := false
+
+					for i, p := range d.pullLog.Layer {
+						if p.Id == info.Id {
+							isFind = true
+							d.pullLog.Layer[i].Status = info.Status
+							d.pullLog.Layer[i].CurSize = info.ProgressDetail.Current
+							d.pullLog.Layer[i].TotalSize = info.ProgressDetail.Total
+							break
+						}
+					}
+
+					if !isFind {
+						d.pullLog.Layer = append(d.pullLog.Layer, PullLayerInfo{
+							Id:        info.Id,
+							Status:    info.Status,
+							CurSize:   info.ProgressDetail.Current,
+							TotalSize: info.ProgressDetail.Total,
+						})
+					}
+				}
+
+				return nil
+			})
+
+			if err != nil {
+				d.pullLog.Layer = append(d.pullLog.Layer, PullLayerInfo{
+					Id:        err.Error(),
+					Status:    "Error",
+					CurSize:   0,
+					TotalSize: 0,
+				})
+			} else {
+				d.pullLog.Layer = append(d.pullLog.Layer, PullLayerInfo{
+					Id:        "",
+					Status:    "Finish",
+					CurSize:   0,
+					TotalSize: 0,
+				})
+			}
+		}
+	}()
+}
+
+// 获取拉取日志
+func (d *DockerClient) GetPullImageLog(c *gin.Context) {
+	wbsocket := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+
+	conn, err := wbsocket.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	defer conn.Close()
+
+	for {
+		log := d.pullLog
+		err := conn.WriteJSON(log)
+		if err != nil {
+			break
+		}
+
+		time.Sleep(2 * time.Second)
+	}
+}
+
+// 拉取镜像
+func (d *DockerClient) PullImage(c *gin.Context) {
+	d.loadConfig()
+
+	name := c.Query("name")
+	if len(name) == 0 {
+		c.JSON(200, gin.H{
+			"err": "The name cannot be empty",
+		})
+
+		return
+	}
+
+	d.pullChan <- name
+
+	c.JSON(200, gin.H{
+		"err": "",
+	})
+}
+
+// 查询镜像
+func (d *DockerClient) SearchImage(c *gin.Context) {
+	d.loadConfig()
+
+	name := c.Query("name")
+	if len(name) == 0 {
+		c.JSON(200, gin.H{
+			"err": "The name cannot be empty",
+		})
+
+		return
+	}
+
+	infos, err := d.cli.SearchImage(name)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err":   "",
+		"infos": infos,
+	})
+}
+
+// 删除镜像
+func (d *DockerClient) DelImage(c *gin.Context) {
+	d.loadConfig()
+
+	id := c.Query("id")
+	if len(id) == 0 {
+		c.JSON(200, gin.H{
+			"err": "The id cannot be empty",
+		})
+
+		return
+	}
+
+	_, err := d.cli.DelImage(id, true)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err": "",
+	})
+}
+
+// 获取镜像详细信息
+func (d *DockerClient) GetImageDetails(c *gin.Context) {
+	d.loadConfig()
+
+	imgId := c.Query("id")
+	if len(imgId) == 0 {
+		c.JSON(200, gin.H{
+			"err": "The id cannot be empty",
+		})
+
+		return
+	}
+
+	details, err := d.cli.InspectImage(imgId)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	infos := ImageDetailInfo{}
+
+	infos.Os = details.Os
+	infos.OsVersion = details.OsVersion
+	infos.Size = details.Size
+
+	if details.Config != nil {
+		for port := range details.Config.ExposedPorts {
+			p := ExportPortInfo{}
+			p.Proto = port.Proto()
+			p.Port = port.Port()
+			infos.ExposedPorts = append(infos.ExposedPorts, p)
+		}
+
+		for v := range details.Config.Volumes {
+			infos.Volumes = append(infos.Volumes, v)
+		}
+
+		infos.Env = details.Config.Env
+		for i, p := range details.Config.Cmd {
+			if i != 0 {
+				infos.Cmd += " "
+			}
+
+			infos.Cmd += p
+		}
+
+		infos.WorkingDir = details.Config.WorkingDir
+	}
 
 	c.JSON(200, gin.H{
 		"err":   "",
@@ -525,13 +802,11 @@ func (d *DockerClient) GetContainerLogs(c *gin.Context) {
 
 	dec, err := d.cli.InspectContainer(name)
 	if err != nil {
-		if err != nil {
-			c.JSON(200, gin.H{
-				"err": err.Error(),
-			})
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
 
-			return
-		}
+		return
 	}
 
 	type Head struct {

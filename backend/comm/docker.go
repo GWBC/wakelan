@@ -139,7 +139,7 @@ func (d *DockerClient) GetImages(name string) ([]image.Summary, error) {
 }
 
 // 拉取镜像
-func (d *DockerClient) PullImage(imageName string) error {
+func (d *DockerClient) PullImage(imageName string, fun func(r *bufio.Reader) error) error {
 	cli, err := d.conn()
 	if err != nil {
 		return nil
@@ -160,22 +160,24 @@ func (d *DockerClient) PullImage(imageName string) error {
 
 	reader := bufio.NewReader(r)
 
-	buf := make([]byte, 1024)
+	if fun == nil {
+		for {
+			buf, err := reader.ReadString('\n')
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
 
-	for {
-		n, err := reader.Read(buf)
-		if err != nil {
-			if err == io.EOF {
-				break
+				return err
 			}
 
-			return err
+			fmt.Println(string(buf))
 		}
-
-		fmt.Println(string(buf[:n]))
+	} else {
+		err = fun(reader)
 	}
 
-	return nil
+	return err
 }
 
 // 删除镜像
@@ -194,7 +196,7 @@ func (d *DockerClient) DelImage(imageName string, force bool) ([]image.DeleteRes
 }
 
 // 获取镜像详情
-func (d *DockerClient) InspectImage(imageName string) (types.ImageInspect, error) {
+func (d *DockerClient) InspectImage(imageID string) (types.ImageInspect, error) {
 	cli, err := d.conn()
 	if err != nil {
 		return types.ImageInspect{}, err
@@ -202,7 +204,7 @@ func (d *DockerClient) InspectImage(imageName string) (types.ImageInspect, error
 
 	defer cli.Close()
 
-	info, _, err := cli.ImageInspectWithRaw(context.Background(), imageName)
+	info, _, err := cli.ImageInspectWithRaw(context.Background(), imageID)
 
 	return info, err
 }
@@ -404,7 +406,7 @@ func (d *DockerClient) RunContainer(cfg *DockerContainerCreate, isUpdate bool) e
 	defer cli.Close()
 
 	if isUpdate {
-		err = d.PullImage(cfg.Image)
+		err = d.PullImage(cfg.Image, nil)
 		if err != nil {
 			return err
 		}
@@ -415,7 +417,7 @@ func (d *DockerClient) RunContainer(cfg *DockerContainerCreate, isUpdate bool) e
 		}
 
 		if len(imgs) == 0 {
-			err = d.PullImage(cfg.Image)
+			err = d.PullImage(cfg.Image, nil)
 			if err != nil {
 				return err
 			}
