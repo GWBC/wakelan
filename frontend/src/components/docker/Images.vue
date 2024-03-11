@@ -86,7 +86,7 @@
                 </template>
             </el-table-column>
         </el-table>
-        <el-table class="!h-1/3" empty-text=" " :span-method="SpanMethod"  :data="pullLogData.layer">
+        <el-table class="!h-1/3" empty-text=" " :span-method="SpanMethod" :data="pullLogData.layer">
             <el-table-column label="镜像" :width="200">
                 <template #default="scope">
                     {{ pullLogData.name }}
@@ -95,7 +95,13 @@
             <el-table-column label="ID" :width="200" prop="id"></el-table-column>
             <el-table-column label="类型" :width="100" prop="status">
                 <template #default="scope">
-                    <el-icon v-if="scope.row.status === 'Downloading'">
+                    <span class="text-red-500 font-bold" v-if="scope.row.id === 'Error'">
+                        {{ scope.row.status }}
+                    </span>
+                    <span class="text-green-500 font-bold" v-else-if="scope.row.id === 'Success'">
+                        {{ scope.row.status }}
+                    </span>
+                    <el-icon v-else-if="scope.row.status === 'Downloading'">
                         <Download />
                     </el-icon>
                     <el-icon v-else-if="scope.row.status === 'Extracting'">
@@ -160,8 +166,8 @@ interface PullLayerInfo {
 }
 
 interface PullLogInfo {
+    refresh: boolean
     name: string
-    err: string
     layer: PullLayerInfo[]
 }
 
@@ -180,8 +186,8 @@ const image_infos_dlg_show = ref(false)
 const image_infos_loading = ref(false)
 
 const pullLogData = ref<PullLogInfo>({
+    refresh: false,
     name: '',
-    err: '',
     layer: [] as PullLayerInfo[],
 })
 
@@ -191,13 +197,23 @@ const props = defineProps<{
     group: string
 }>()
 
-function SpanMethod(data:{row: any, column: any, rowIndex: number, columnIndex: number}) : number[]{
+function SpanMethod(data: { row: any, column: any, rowIndex: number, columnIndex: number }): number[] {
     if (data.columnIndex == 0) {
         if (data.rowIndex != 0) {
             return [0, 0]
         }
 
         return [pullLogData.value.layer.length, 1]
+    }
+
+    if (data.row.id == "Error" || data.row.id == "Success") {
+        if (data.columnIndex == 0) {
+            return [1, 1]
+        } else if (data.columnIndex == 1 || data.columnIndex == 3) {
+            return [0, 0]
+        } else {
+            return [1, 3]
+        }
     }
 
     return [1, 1]
@@ -224,14 +240,14 @@ function onQuery() {
 }
 
 function onPull(name: string) {
-    name = image_name.value.trim()
+    let tName = name.trim()
 
-    if (name.length == 0) {
+    if (tName.length == 0) {
         ElMessage.error("请输入镜像")
         return
     }
 
-    AsyncFetch<void>(`${props.group}pullImage?name=${name}`, null).then((infos) => {
+    AsyncFetch<void>(`${props.group}pullImage?name=${tName}`, null).then((infos) => {
     })
 }
 
@@ -293,6 +309,9 @@ function getPullLog() {
     websocket.SetMsgFun((event: MessageEvent) => {
         let msg = event.data.toString()
         pullLogData.value = JSON.parse(msg)
+        if (pullLogData.value.refresh) {
+            getImages()
+        }
     })
 
     websocket.Conn(`ws://${window.location.host}/${props.group}getPullImageLog`)

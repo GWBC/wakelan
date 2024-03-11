@@ -115,8 +115,9 @@ type PullLayerInfo struct {
 }
 
 type PullLogInfo struct {
-	Name  string          `json:"name"`
-	Layer []PullLayerInfo `json:"layer"`
+	Name    string          `json:"name"`
+	Refresh bool            `json:"refresh"`
+	Layer   []PullLayerInfo `json:"layer"`
 }
 
 type DockerClient struct {
@@ -341,15 +342,16 @@ func (d *DockerClient) ASyncPullImage() {
 
 			if err != nil {
 				d.pullLog.Layer = append(d.pullLog.Layer, PullLayerInfo{
-					Id:        err.Error(),
-					Status:    "Error",
+					Id:        "Error",
+					Status:    err.Error(),
 					CurSize:   0,
 					TotalSize: 0,
 				})
 			} else {
+				d.pullLog.Refresh = true
 				d.pullLog.Layer = append(d.pullLog.Layer, PullLayerInfo{
-					Id:        "",
-					Status:    "Finish",
+					Id:        "Success",
+					Status:    "Success",
 					CurSize:   0,
 					TotalSize: 0,
 				})
@@ -378,8 +380,13 @@ func (d *DockerClient) GetPullImageLog(c *gin.Context) {
 	defer conn.Close()
 
 	for {
-		log := d.pullLog
-		err := conn.WriteJSON(log)
+		logMsg := d.pullLog
+
+		if logMsg.Refresh {
+			d.pullLog.Refresh = false
+		}
+
+		err := conn.WriteJSON(logMsg)
 		if err != nil {
 			break
 		}
