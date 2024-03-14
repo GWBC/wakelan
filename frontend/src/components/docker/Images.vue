@@ -162,9 +162,9 @@
                     <el-button type="success" link size="default" @click='onRun(scope.row)'>
                         运行
                     </el-button>
-                    <el-button type="success" link size="default" @click='onRun(scope.row)'>
+                    <!-- <el-button type="success" link size="default" @click='onRun(scope.row)'>
                         推送
-                    </el-button>
+                    </el-button> -->
                     <el-button type="danger" link size="default" @click='onDel(scope.row)'>
                         删除
                     </el-button>
