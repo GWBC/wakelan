@@ -227,17 +227,14 @@ func (f *FileTransfer) Download(c *gin.Context) {
 
 	fileSize := fileInfo.Size()
 
-	if len(fName) != 0 {
-		//设置文件名称
-		c.Header("Content-Disposition",
-			fmt.Sprintf("attachment; filename=\"%s\"", fName))
-	} else {
+	if len(fName) == 0 {
 		fName = fMD5
 	}
 
 	c.Header("Content-Type", "application/octet-stream")
 	c.Header("Content-Length", strconv.FormatInt(fileSize, 10))
 	c.Header("Accept-Ranges", "bytes")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fName)) //设置文件名称
 
 	rangeHeader := c.GetHeader("Range")
 	if len(rangeHeader) == 0 {
@@ -251,7 +248,7 @@ func (f *FileTransfer) Download(c *gin.Context) {
 	rangeSplits := strings.Split(rangeHeader, ",")
 
 	if len(rangeSplits) == 0 {
-		c.String(http.StatusRequestedRangeNotSatisfiable, err.Error())
+		c.String(http.StatusRequestedRangeNotSatisfiable, "Invalid range")
 		return
 	}
 

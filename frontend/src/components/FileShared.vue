@@ -282,7 +282,7 @@ function remove(uploadFile: UploadFile, uploadFiles: UploadFiles): Awaitable<boo
 }
 
 function download(row: FileMeta) {
-    DownloadFileFromURL(`${group}/download?file=${row.md5}&key=${sharedKey.value}`, row.name)
+    DownloadFileFromURL(`${group}/download?file=${row.md5}&name=${row.name}&key=${sharedKey.value}`, row.name)
 }
 
 function upload(opt: UploadRequestOptions): any {

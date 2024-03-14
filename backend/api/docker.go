@@ -10,6 +10,8 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
+	"path"
 	"sort"
 	"strconv"
 	"strings"
@@ -63,6 +65,7 @@ type ContainerInfo struct {
 	RunTime    string       `json:"run_time"`
 	State      string       `json:"state"`
 	CreateTime string       `json:"create_time"`
+	ServerIP   string       `json:"server_ip"`
 }
 
 type IPAMConfig struct {
@@ -135,11 +138,87 @@ func (d *DockerClient) Init() error {
 	return nil
 }
 
+func (d *DockerClient) mkdir(dirPath string) error {
+	cfg := db.DBOperObj().GetConfig()
+	if cfg.DockerEnableTCP {
+		tpath := path.Join("/mount", dirPath)
+		return d.cli.ExecAssistContainerCmd("mkdir -p " + tpath)
+	}
+
+	//本地创建目录
+	err := os.MkdirAll(dirPath, 0755)
+	if err != nil && os.IsExist(err) {
+		return nil
+	}
+
+	return err
+}
+
 func (d *DockerClient) loadConfig() {
 	cfg := db.DBOperObj().GetConfig()
 	if cfg.DockerEnableTCP {
 		d.cli.SetHost(fmt.Sprintf("tcp://%s:%d", cfg.DockerSvrIP, cfg.DockerSvrPort))
 	}
+}
+
+// 运行容器
+func (d *DockerClient) RunContainer(c *gin.Context) {
+	d.loadConfig()
+
+	info := &comm.DockerContainerCreate{}
+	err := c.ShouldBindJSON(&info)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	cfg := db.DBOperObj().GetConfig()
+	for i, mount := range info.Mounts {
+		if len(mount) == 0 {
+			continue
+		}
+
+		dirs := strings.Split(mount, ":")
+		if len(dirs) != 2 {
+			c.JSON(200, gin.H{
+				"err": "mount format error",
+			})
+
+			return
+		}
+
+		pubDir := dirs[0]
+		image := strings.ReplaceAll(info.Image, "/", "-")
+		image = strings.ReplaceAll(image, ":", "/")
+		p := path.Join(cfg.ContainerRootPath, image, pubDir)
+
+		err = d.mkdir(p)
+		if err != nil {
+			c.JSON(200, gin.H{
+				"err": err.Error(),
+			})
+
+			return
+		}
+
+		info.Mounts[i] = p + ":" + dirs[1]
+	}
+
+	err = d.cli.RunContainer(info, false)
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err": "",
+	})
 }
 
 // 获取宿主机网卡信息
@@ -246,7 +325,8 @@ func (d *DockerClient) GetNewtworkCards(c *gin.Context) {
 		return
 	}
 
-	infos := []NetworkCardInfo{}
+	noRMInfos := []NetworkCardInfo{}
+	okRMInfos := []NetworkCardInfo{}
 
 	for _, card := range cards {
 		info := NetworkCardInfo{}
@@ -265,16 +345,26 @@ func (d *DockerClient) GetNewtworkCards(c *gin.Context) {
 			})
 		}
 
-		infos = append(infos, info)
+		if info.Name == "bridge" ||
+			info.Name == "none" ||
+			info.Name == "host" {
+			noRMInfos = append(noRMInfos, info)
+		} else {
+			okRMInfos = append(okRMInfos, info)
+		}
 	}
 
-	sort.Slice(infos, func(i, j int) bool {
-		return infos[i].Created > infos[j].Created
+	sort.Slice(noRMInfos, func(i, j int) bool {
+		return noRMInfos[i].Name[0] < noRMInfos[j].Name[0]
+	})
+
+	sort.Slice(okRMInfos, func(i, j int) bool {
+		return okRMInfos[i].Created > okRMInfos[j].Created
 	})
 
 	c.JSON(200, gin.H{
 		"err":   "",
-		"infos": infos,
+		"infos": append(okRMInfos, noRMInfos...),
 	})
 }
 
@@ -379,16 +469,26 @@ func (d *DockerClient) GetPullImageLog(c *gin.Context) {
 
 	defer conn.Close()
 
-	for {
-		logMsg := d.pullLog
-
-		if logMsg.Refresh {
-			d.pullLog.Refresh = false
+	go func() {
+		for {
+			_, _, err := conn.ReadMessage()
+			if err != nil {
+				conn.Close()
+				break
+			}
 		}
+	}()
 
-		err := conn.WriteJSON(logMsg)
+	for {
+		info := d.pullLog
+
+		err := conn.WriteJSON(info)
 		if err != nil {
 			break
+		}
+
+		if d.pullLog.Refresh {
+			d.pullLog.Refresh = false
 		}
 
 		time.Sleep(2 * time.Second)
@@ -511,8 +611,17 @@ func (d *DockerClient) GetImageDetails(c *gin.Context) {
 		}
 
 		infos.Env = details.Config.Env
-		for i, p := range details.Config.Cmd {
-			if i != 0 {
+
+		for _, p := range details.Config.Entrypoint {
+			if len(infos.Cmd) != 0 {
+				infos.Cmd += " "
+			}
+
+			infos.Cmd += p
+		}
+
+		for _, p := range details.Config.Cmd {
+			if len(infos.Cmd) != 0 {
 				infos.Cmd += " "
 			}
 
@@ -583,6 +692,8 @@ func (d *DockerClient) GetImages(c *gin.Context) {
 func (d *DockerClient) GetContainers(c *gin.Context) {
 	d.loadConfig()
 
+	cfg := db.DBOperObj().GetConfig()
+
 	containers, err := d.cli.GetContainers("")
 	if err != nil {
 		c.JSON(200, gin.H{
@@ -633,6 +744,7 @@ func (d *DockerClient) GetContainers(c *gin.Context) {
 		info.V6Ports = []PortInfo{}
 		info.Networks = []NetInfo{}
 		info.VolumeInfo = []VolumeInfo{}
+		info.ServerIP = cfg.DockerSvrIP
 
 		sort.Slice(container.Ports, func(i, j int) bool {
 			return container.Ports[i].PublicPort < container.Ports[j].PublicPort
@@ -757,7 +869,7 @@ func (d *DockerClient) OperContainer(c *gin.Context) {
 	var err error
 
 	if t == "start" {
-		err = d.cli.StartlContainer(name)
+		err = d.cli.StartContainer(name)
 	} else if t == "stop" {
 		err = d.cli.StopContainer(name)
 	} else {

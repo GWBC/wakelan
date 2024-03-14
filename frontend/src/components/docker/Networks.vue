@@ -1,8 +1,5 @@
 <template>
-    <el-dialog v-model="editDlgShow" @open="onDlgOpen" @close="onDlgClose">
-        <template #header>
-            <h1 class=" text-gray-500 text-center">添加网络</h1>
-        </template>
+    <el-dialog v-model="editDlgShow" title="添加网络" @open="onDlgOpen" @close="onDlgClose">
         <el-form :model="editFormData" label-width="80px" status-icon class="!mb-10" :rules="rules">
             <el-form-item label="名称" prop="name">
                 <el-input ref="formName" v-model="editFormData.name" placeholder="请输入网络名称" />

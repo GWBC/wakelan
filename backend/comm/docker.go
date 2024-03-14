@@ -23,8 +23,9 @@ import (
 )
 
 type DockerClient struct {
-	host string
-	auth string
+	host                string
+	auth                string
+	assistContainerName string
 }
 
 func (d *DockerClient) conn() (*client.Client, error) {
@@ -42,6 +43,7 @@ func (d *DockerClient) conn() (*client.Client, error) {
 // 网络：tcp://ip:2375
 func (d *DockerClient) SetHost(host string) {
 	d.host = host
+	d.assistContainerName = "docker-assist"
 }
 
 // 设置用户信息
@@ -61,6 +63,37 @@ func (d *DockerClient) SetUserInfo(user string, pwd string) error {
 	d.auth = auth
 
 	return nil
+}
+
+// 辅助容器执行命令
+func (d *DockerClient) ExecAssistContainerCmd(cmd string) error {
+	infos, err := d.GetContainers(d.assistContainerName)
+	if err != nil {
+		return err
+	}
+
+	if len(infos) == 0 {
+		err = d.RunContainer(&DockerContainerCreate{
+			Name:          d.assistContainerName,
+			Image:         "busybox",
+			Privileged:    true,
+			AutoRemove:    false,
+			RestartPolicy: container.RestartPolicyAlways,
+			Cmd:           "sh",
+			Mounts: []string{
+				"/:/mount",
+			},
+		}, false)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return d.ExecContainer(&ContainerExecConfig{
+		Name: d.assistContainerName,
+		Cmd:  []string{"/bin/sh", "-c", cmd},
+	})
 }
 
 // //////////////////////////////////////////////////////////////////
@@ -162,7 +195,7 @@ func (d *DockerClient) PullImage(imageName string, fun func(r *bufio.Reader) err
 
 	if fun == nil {
 		for {
-			buf, err := reader.ReadString('\n')
+			_, err := reader.ReadString('\n')
 			if err != nil {
 				if err == io.EOF {
 					break
@@ -170,8 +203,6 @@ func (d *DockerClient) PullImage(imageName string, fun func(r *bufio.Reader) err
 
 				return err
 			}
-
-			fmt.Println(string(buf))
 		}
 	} else {
 		err = fun(reader)
@@ -247,8 +278,8 @@ func (d *DockerClient) ExportImage(imageName string, fileName string) (string, e
 	defer gzFile.Close()
 
 	gzWriter := gzip.NewWriter(gzFile)
-	if err != nil {
-		return "", err
+	if gzWriter == nil {
+		return "", errors.New("gzip new error")
 	}
 
 	defer gzWriter.Close()
@@ -387,13 +418,15 @@ func (d *DockerClient) GetContainers(name string) ([]types.Container, error) {
 }
 
 type DockerContainerCreate struct {
-	Name       string   //容器名称
-	Image      string   //镜像名称
-	Cmd        []string //执行命令
-	Privileged bool     //开启特权
-	NetName    string   //网络名称
-	Ports      []string //端口映射 public:private/proto，public-public:private-private/proto
-	Mounts     []string //目录映射 public:private
+	Name          string                      `json:"name"`           //容器名称
+	RestartPolicy container.RestartPolicyMode `json:"restart_policy"` //重启策略
+	Image         string                      `json:"image"`          //镜像名称
+	Cmd           string                      `json:"cmd"`            //执行命令
+	Privileged    bool                        `json:"privileged"`     //开启特权
+	NetName       string                      `json:"net_name"`       //网络名称
+	Ports         []string                    `json:"ports"`          //端口映射 public:private/proto，public-public:private-private/proto
+	Mounts        []string                    `json:"mounts"`         //目录映射 public:private
+	AutoRemove    bool                        `json:"auto_remove"`    //退出删除容器
 }
 
 // 运行容器
@@ -427,7 +460,8 @@ func (d *DockerClient) RunContainer(cfg *DockerContainerCreate, isUpdate bool) e
 	//容器配置
 	containerCfg := container.Config{}
 	containerCfg.Image = cfg.Image
-	containerCfg.Cmd = append(containerCfg.Cmd, cfg.Cmd...)
+	containerCfg.Tty = true
+	containerCfg.Entrypoint = append(containerCfg.Entrypoint, strings.Split(cfg.Cmd, " ")...)
 
 	//端口、目录映射配置
 	_, portMap, err := nat.ParsePortSpecs(cfg.Ports)
@@ -446,6 +480,9 @@ func (d *DockerClient) RunContainer(cfg *DockerContainerCreate, isUpdate bool) e
 			Type:   mount.TypeBind,
 			Source: mts[0],
 			Target: mts[1],
+			BindOptions: &mount.BindOptions{
+				CreateMountpoint: true,
+			},
 		})
 	}
 
@@ -453,6 +490,11 @@ func (d *DockerClient) RunContainer(cfg *DockerContainerCreate, isUpdate bool) e
 	containerHost.PortBindings = portMap
 	containerHost.Mounts = mounts
 	containerHost.Privileged = cfg.Privileged
+	containerHost.AutoRemove = cfg.AutoRemove
+
+	if !containerHost.AutoRemove {
+		containerHost.RestartPolicy = container.RestartPolicy{Name: cfg.RestartPolicy}
+	}
 
 	//网络配置
 	containerNet := network.NetworkingConfig{}
@@ -462,12 +504,12 @@ func (d *DockerClient) RunContainer(cfg *DockerContainerCreate, isUpdate bool) e
 		}
 	}
 
-	_, err = cli.ContainerCreate(context.Background(), &containerCfg, &containerHost, &containerNet, nil, cfg.Name)
+	rsp, err := cli.ContainerCreate(context.Background(), &containerCfg, &containerHost, &containerNet, nil, cfg.Name)
 	if err != nil {
 		return err
 	}
 
-	err = cli.ContainerStart(context.Background(), cfg.Name, container.StartOptions{})
+	err = cli.ContainerStart(context.Background(), rsp.ID, container.StartOptions{})
 	if err != nil {
 		return err
 	}
@@ -490,7 +532,7 @@ func (d *DockerClient) DelContainer(name string, force bool) error {
 }
 
 // 启动容器
-func (d *DockerClient) StartlContainer(name string) error {
+func (d *DockerClient) StartContainer(name string) error {
 	cli, err := d.conn()
 	if err != nil {
 		return err

@@ -92,6 +92,7 @@ func (a *Web) SetDockerClientApi(r *gin.Engine) {
 	group.GET("/queryImage", api.SearchImage)
 	group.GET("/pullImage", api.PullImage)
 	group.GET("/getPullImageLog", api.GetPullImageLog)
+	group.POST("/runContainer", api.RunContainer)
 }
 
 ///////////////////////////////////////////////////////////////////

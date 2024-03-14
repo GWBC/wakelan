@@ -33,4 +33,27 @@ html, body {
     flex-direction: column;
 }
 
+.el-dialog__header {
+    height: 60px;
+    margin: 0px;
+    padding: 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
+.el-dialog__title {
+    font-size: large;
+    font-weight: bold;
+    color: #303133 !important;
+}
+
+.el-dialog__headerbtn {
+    top: 10px !important;
+}
+
+.el-dialog__body {
+    padding-top: 10px !important;
+    padding-bottom: 30px !important;
+    height: calc(100% - 60px) !important;
+}

@@ -49,9 +49,10 @@ type GlobalInfo struct {
 	Debug       bool `gorm:"column:debug" json:"debug"`
 	SharedLimit int  `gorm:"column:shared_limit;default:7" json:"shared_limit"`
 
-	DockerEnableTCP bool   `gorm:"docker_enable_tcp;default:false" json:"docker_enable_tcp"`
-	DockerSvrIP     string `gorm:"docker_svr_ip;default:127.0.0.1" json:"docker_svr_ip"`
-	DockerSvrPort   int    `gorm:"docker_svr_port;default:2375" json:"docker_svr_port"`
+	DockerEnableTCP   bool   `gorm:"docker_enable_tcp;default:false" json:"docker_enable_tcp"`
+	DockerSvrIP       string `gorm:"docker_svr_ip;default:127.0.0.1" json:"docker_svr_ip"`
+	DockerSvrPort     int    `gorm:"docker_svr_port;default:2375" json:"docker_svr_port"`
+	ContainerRootPath string `gorm:"container_root_path;default:/opt/container-root" json:"container_root_path"`
 
 	CheckIPAddr string `gorm:"column:check_ip_addr;default:http://ddns.oray.com/checkip;https://ipinfo.io/ip;" json:"check_ip_addr"`
 }

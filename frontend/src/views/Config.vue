@@ -77,7 +77,10 @@
                                 <el-input :disabled="!formData.docker_enable_tcp"
                                     v-model.number="formData.docker_svr_port" />
                             </el-form-item>
-                            <el-form-item label="">
+                            <el-form-item label="容器根目录">
+                                <el-input readonly v-model="formData.container_root_path" />
+                            </el-form-item>
+                            <el-form-item>
                                 <div class="ml-auto">
                                     <el-button type="primary" @click="onModify()">提交</el-button>
                                 </div>
@@ -117,6 +120,7 @@ interface GuacdInfo {
     docker_enable_tcp: boolean
     docker_svr_ip: string
     docker_svr_port: number
+    container_root_path: string
     ip: string
 }
 
@@ -136,6 +140,7 @@ const formData = ref<GuacdInfo>({
     docker_enable_tcp: false,
     docker_svr_ip: '127.0.0.1',
     docker_svr_port: 2375,
+    container_root_path: '/opt/container-root',
     ip: '',
 })
 

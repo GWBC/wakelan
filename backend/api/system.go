@@ -30,9 +30,10 @@ type ConfigInfo struct {
 	Debug       bool `gorm:"column:debug" json:"debug"`
 	SharedLimit int  `gorm:"column:shared_limit" json:"shared_limit"`
 
-	DockerEnableTCP bool   `gorm:"docker_enable_tcp" json:"docker_enable_tcp"`
-	DockerSvrIP     string `gorm:"docker_svr_ip" json:"docker_svr_ip"`
-	DockerSvrPort   int    `gorm:"docker_svr_port" json:"docker_svr_port"`
+	DockerEnableTCP   bool   `gorm:"docker_enable_tcp" json:"docker_enable_tcp"`
+	DockerSvrIP       string `gorm:"docker_svr_ip" json:"docker_svr_ip"`
+	DockerSvrPort     int    `gorm:"docker_svr_port" json:"docker_svr_port"`
+	ContainerRootPath string `gorm:"container_root_path" json:"container_root_path"`
 
 	CheckIPAddr string `gorm:"column:check_ip_addr;" json:"check_ip_addr"`
 }
@@ -114,6 +115,7 @@ func (r *System) GetConfigInfo(c *gin.Context) {
 	cfg.DockerEnableTCP = info.DockerEnableTCP
 	cfg.DockerSvrIP = info.DockerSvrIP
 	cfg.DockerSvrPort = info.DockerSvrPort
+	cfg.ContainerRootPath = info.ContainerRootPath
 
 	cfg.CheckIPAddr = info.CheckIPAddr
 

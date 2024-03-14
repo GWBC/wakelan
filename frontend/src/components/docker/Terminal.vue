@@ -134,7 +134,7 @@ function onOpen() {
 }
 
 .terminal-dlg .el-dialog__header {
-    height: 30px;
+    height: 40px;
     margin: 0px;
     padding: 0px;
     display: flex;
@@ -150,12 +150,13 @@ function onOpen() {
 .terminal-dlg .el-dialog__headerbtn {
     height: 30px;
     width: 30px;
+    margin-top: 5px;
     margin-right: 10px;
 }
 
 .terminal-dlg .el-dialog__body {
-    height: calc(100% - 30px);
-    margin: 0px;
-    padding: 0px;
+    height: calc(100% - 40px) !important;
+    margin: 0px !important;
+    padding: 0px !important;
 }
 </style>

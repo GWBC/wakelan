@@ -1,8 +1,5 @@
 <template>
     <el-dialog v-model="editDlg" @open="onDlgOpen">
-        <template #header>
-            <h1 class=" text-gray-500 text-center">修改容器名称</h1>
-        </template>
         <el-form :model="editDlgData">
             <el-form-item label="容器名">
                 <el-text>{{ editDlgData.name }}</el-text>
@@ -18,11 +15,7 @@
         </el-form>
     </el-dialog>
 
-    <el-dialog v-model="details" class="container_details_dlg !h-1/2">
-
-        <template #header>
-            <h1 class="text-gray-500 text-center">{{ detailsInfo.name }}</h1>
-        </template>
+    <el-dialog v-model="details" :title="detailsInfo.name + ' 详情'" class="container_details_dlg !h-1/2">
         <el-tabs class="ml-10 mr-10 h-full" tab-position="left">
             <el-tab-pane class="!h-full" label="网络配置">
                 <el-table class="!h-full" table-layout="auto" :data="detailsInfo.networks" empty-text=" ">
@@ -34,7 +27,8 @@
                 </el-table>
             </el-tab-pane>
             <el-tab-pane class="h-full" label="目录映射">
-                <el-table class="!h-full" table-layout="auto" show-overflow-tooltip :data="detailsInfo.volume_info" empty-text=" ">
+                <el-table class="!h-full" table-layout="auto" show-overflow-tooltip :data="detailsInfo.volume_info"
+                    empty-text=" ">
                     <el-table-column prop="type" label="类型" />
                     <el-table-column prop="name" label="名称" />
                     <el-table-column prop="source" label="宿主目录" />
@@ -47,6 +41,20 @@
                     <el-table-column prop="ip" label="宿主地址" />
                     <el-table-column prop="public_port" label="宿主端口" />
                     <el-table-column prop="private_port" label="容器端口" />
+                    <el-table-column label="">
+                        <template #default="scope">
+                            <div class="flex gap-2">
+                                <el-link type="primary" target="_blank"
+                                    :href="calcURL(detailsInfo.server_ip, scope.row.public_port, 'http')">
+                                    HTTP
+                                </el-link>
+                                <el-link type="primary" target="_blank"
+                                    :href="calcURL(detailsInfo.server_ip, scope.row.public_port, 'https')">
+                                    HTTPS
+                                </el-link>
+                            </div>
+                        </template>
+                    </el-table-column>
                 </el-table>
             </el-tab-pane>
             <el-tab-pane class="h-full" label="IPv6映射">
@@ -55,6 +63,20 @@
                     <el-table-column prop="ip" label="宿主地址" />
                     <el-table-column prop="public_port" label="宿主端口" />
                     <el-table-column prop="private_port" label="容器端口" />
+                    <el-table-column label="">
+                        <template #default="scope">
+                            <div class="flex gap-2">
+                                <el-link type="primary" target="_blank"
+                                    :href="calcURL(detailsInfo.server_ip, scope.row.public_port, 'http')">
+                                    HTTP
+                                </el-link>
+                                <el-link type="primary" target="_blank"
+                                    :href="calcURL(detailsInfo.server_ip, scope.row.public_port, 'https')">
+                                    HTTPS
+                                </el-link>
+                            </div>
+                        </template>
+                    </el-table-column>
                 </el-table>
             </el-tab-pane>
         </el-tabs>
@@ -96,71 +118,11 @@
 
                 <template #default="scope">
                     <div class="container_op_btn">
-                        <!-- <el-button color="#000000" :disabled="scope.row.state != 'running'"
-                            @click="onTerminal(scope.row)">
-                            <el-icon :size="iconSize">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
-                                    <rect x="32" y="48" width="448" height="416" rx="48" ry="48" fill="none"
-                                        stroke="currentColor" stroke-linejoin="round" stroke-width="32" />
-                                    <path fill="none" stroke="currentColor" stroke-linecap="round"
-                                        stroke-linejoin="round" stroke-width="32" d="M96 112l80 64-80 64M192 240h64" />
-                                </svg>
-                            </el-icon>
-                        </el-button>
-                        <el-button color="#626aef" @click="onLog(scope.row)">
-                            <el-icon :size="iconSize">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
-                                    <circle cx="128" cy="256" r="96" fill="none" stroke="currentColor"
-                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
-                                    <circle cx="384" cy="256" r="96" fill="none" stroke="currentColor"
-                                        stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
-                                    <path fill="none" stroke="currentColor" stroke-linecap="round"
-                                        stroke-linejoin="round" stroke-width="32" d="M128 352h256" />
-                                </svg>
-                            </el-icon>
-                        </el-button>
-                        <el-button v-if="scope.row.state == 'running'" color="#337ecc" @click="onStop(scope.row)">
-                            <el-icon :size="iconSize">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
-                                    <path d="M448 256c0-106-86-192-192-192S64 150 64 256s86 192 192 192 192-86 192-192z"
-                                        fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" />
-                                    <path
-                                        d="M310.4 336H201.6a25.62 25.62 0 01-25.6-25.6V201.6a25.62 25.62 0 0125.6-25.6h108.8a25.62 25.62 0 0125.6 25.6v108.8a25.62 25.62 0 01-25.6 25.6z" />
-                                </svg>
-                            </el-icon>
-                        </el-button>
-                        <el-button v-else color="#337ecc" @click="onStart(scope.row)">
-                            <el-icon :size="iconSize">
-                                <VideoPlay />
-                            </el-icon>
-                        </el-button>
-                        <el-button color="#337ecc" @click="onRestart(scope.row)">
-                            <el-icon :size="iconSize">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="ionicon" viewBox="0 0 512 512">
-                                    <path d="M288 193s12.18-6-32-6a80 80 0 1080 80" fill="none" stroke="currentColor"
-                                        stroke-linecap="round" stroke-miterlimit="10" stroke-width="28" />
-                                    <path fill="none" stroke="currentColor" stroke-linecap="round"
-                                        stroke-linejoin="round" stroke-width="28" d="M256 149l40 40-40 40" />
-                                    <path d="M256 64C150 64 64 150 64 256s86 192 192 192 192-86 192-192S362 64 256 64z"
-                                        fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32" />
-                                </svg>
-                            </el-icon>
-                        </el-button>
-                        <el-button color="#337ecc" @click="onEdit(scope.row)">
-                            <el-icon :size="iconSize">
-                                <Edit />
-                            </el-icon>
-                        </el-button>
-                        <el-button type="danger" @click="onDelete(scope.row)">
-                            <el-icon :size="iconSize">
-                                <Delete />
-                            </el-icon>
-                        </el-button> -->
-                        <el-button :type="scope.row.state == 'running' ? 'success ' : 'info'" link size="default"
+                        <el-button :type="scope.row.state == 'running' ? 'success' : 'info'" link size="default"
                             :disabled="scope.row.state != 'running'" @click="onTerminal(scope.row)">
                             终端
                         </el-button>
-                        <el-button type="success " link size="default" @click="onLog(scope.row)">
+                        <el-button type="success" link size="default" @click="onLog(scope.row)">
                             日志
                         </el-button>
                         <el-button v-if="scope.row.state == 'running'" type="success" link size="default"
@@ -191,7 +153,6 @@ import { onMounted, ref, reactive, nextTick } from 'vue'
 import { AsyncFetch } from '@/lib/comm'
 import Terminal from '@/components/docker/Terminal.vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { Edit, Delete, VideoPlay } from '@element-plus/icons-vue'
 
 interface PortInfo {
     ip: string
@@ -227,6 +188,7 @@ interface ContainerInfo {
     run_time: string
     state: string
     create_time: string
+    server_ip: string
 }
 
 interface EditData {
@@ -250,7 +212,6 @@ const termTitle = ref('')
 const containerDatas = ref<ContainerInfo[]>([])
 const props = defineProps<{ group: string }>()
 
-const iconSize = ref(16)
 const dataLoding = ref(false)
 const dataSvg = ref(`
 <path class="path" d="
@@ -265,6 +226,14 @@ const dataSvg = ref(`
 
 const details = ref(false)
 const detailsInfo = ref<ContainerInfo>({} as ContainerInfo)
+
+function calcURL(host: string, pubPort: string, proto: string) {
+    if (host.length == 0) {
+        host = window.location.hostname
+    }
+
+    return `${proto}://${host}:${pubPort}`
+}
 
 function onDetails(row: ContainerInfo) {
     details.value = true

@@ -110,7 +110,6 @@ func (r *Remote) remote(c *gin.Context) {
 	}
 
 	if len(connInfo) == 0 {
-		fmt.Println(err.Error())
 		c.JSON(200, gin.H{
 			"err": "参数错误",
 		})
