@@ -1,5 +1,6 @@
 <template>
-    <el-dialog ref="fsDlg" @keydown="onFSKeyDown" @dragover.prevent v-model="fsDlgShow" :append-to-body="true">
+    <el-dialog class="fs-dialog" ref="fsDlg" @keydown="onFSKeyDown" @dragover.prevent v-model="fsDlgShow"
+        :append-to-body="true">
         <template #header>
             <el-breadcrumb class="breadcrumb" separator=">">
                 <el-breadcrumb-item v-for="(item, index) in fsCurPathObj" @click='changeDir(item.path)'>
@@ -62,8 +63,8 @@
         </el-button>
     </ContrlButton>
 
-    <el-dialog class="remoteDlg" v-model="showRemote" :close-on-press-escape="false" :fullscreen="true" :show-close="false"
-        :append-to-body="true" destroy-on-close @open="onOpen" @close="onClose">
+    <el-dialog class="remoteDlg" v-model="showRemote" :close-on-press-escape="false" :fullscreen="true"
+        :show-close="false" :append-to-body="true" destroy-on-close @open="onOpen" @close="onClose">
         <div ref="viewport" class="viewport" v-loading="isLoading" element-loading-text="连接中..."
             :element-loading-spinner="loadingSVG" element-loading-svg-view-box="-10, -10, 50, 50"
             element-loading-background="rgba(0, 0, 0, 0.7)">
@@ -98,7 +99,7 @@
         </div>
     </el-dialog>
 </template>
-  
+
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { FullScreenOrRecover, ExitFullScreen, Now2Str } from '@/lib/comm';
@@ -450,7 +451,7 @@ function onCloseConn() {
 }
 
 </script>
-  
+
 <style scoped>
 .el-dialog {
     /* 必须设置绝对定位的锚点 */
@@ -482,14 +483,21 @@ function onCloseConn() {
     margin-top: 5px;
 }
 </style>
-  
+
 <style>
 /* 修改el-dialog的样式不能使用scoped */
 .remoteDlg>.el-dialog__header {
-    padding: 0px;
+    padding: 0px !important;
+    height: 0px !important;
 }
 
 .remoteDlg>.el-dialog__body {
-    padding: 0px;
+    padding: 0px !important;
+}
+
+.fs-dialog>.el-dialog__header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
 }
 </style>

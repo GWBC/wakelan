@@ -77,8 +77,11 @@
                                 <el-input :disabled="!formData.docker_enable_tcp"
                                     v-model.number="formData.docker_svr_port" />
                             </el-form-item>
-                            <el-form-item label="容器根目录">
-                                <el-input readonly v-model="formData.container_root_path" />
+                            <el-form-item label="推送用户">
+                                <el-input v-model="formData.docker_user" />
+                            </el-form-item>
+                            <el-form-item label="推送密码">
+                                <el-input type="password" v-model="formData.docker_passwd" />
                             </el-form-item>
                             <el-form-item>
                                 <div class="ml-auto">
@@ -92,9 +95,9 @@
         </template>
     </MainPage>
 </template>
- 
+
 <script setup lang="ts">
-import { AsyncFetch, DeleteCookie } from '@/lib/comm'
+import { AsyncFetch, DeleteCookie, AESEncrypt } from '@/lib/comm'
 import { ref, onMounted } from 'vue'
 import QrcodeVue from 'qrcode.vue'
 import router from '@/router'
@@ -121,6 +124,8 @@ interface GuacdInfo {
     docker_svr_ip: string
     docker_svr_port: number
     container_root_path: string
+    docker_user: string
+    docker_passwd: string
     ip: string
 }
 
@@ -141,6 +146,8 @@ const formData = ref<GuacdInfo>({
     docker_svr_ip: '127.0.0.1',
     docker_svr_port: 2375,
     container_root_path: '/opt/container-root',
+    docker_user: '',
+    docker_passwd: '',
     ip: '',
 })
 
@@ -148,16 +155,36 @@ const group: string = 'api/system/'
 const qrCodeSize = ref(200)
 
 let secret: string
+let randKey = ''
+let iv = 'FF9B491CE5EE6BAF'
+
+function getRandKey() {
+    return new Promise<boolean>((resolve, reject) => {
+        AsyncFetch<string>(`/api/public/getRandKey`, null).then(infos => {
+            randKey = infos
+            resolve(true)
+        }).catch(error => {
+            reject(error)
+        })
+    })
+}
 
 function getData() {
-    AsyncFetch<GuacdInfo>(`${group}configinfo`, null).then(info => {
-        formData.value = info
-        secret = info.secret
+    getRandKey().then(() => {
+        AsyncFetch<GuacdInfo>(`${group}configinfo`, null).then(info => {            
+            formData.value = info
+            secret = info.secret
+        })
     })
 }
 
 function onModify() {
-    AsyncFetch(`${group}setconfig?info=${encodeURIComponent(JSON.stringify(formData.value))}`, null).then(info => {
+    let data = formData.value
+    if (data.docker_passwd != '******'){
+        data.docker_passwd = AESEncrypt(data.docker_passwd, randKey, iv)
+    }
+    
+    AsyncFetch(`${group}setconfig?info=${encodeURIComponent(JSON.stringify(data))}`, null).then(info => {
         if (secret != formData.value.secret) {
             DeleteCookie('token')
             router.push("/login")

@@ -52,6 +52,10 @@ func (tm *TokenManager) GenToken(minute int) (string, error) {
 }
 
 func (tm *TokenManager) VerifyToken(token string) bool {
+	for len(token)%4 != 0 {
+		token += "="
+	}
+
 	data, err := base64.URLEncoding.DecodeString(token)
 	if err != nil {
 		return false

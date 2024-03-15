@@ -53,6 +53,8 @@ type GlobalInfo struct {
 	DockerSvrIP       string `gorm:"docker_svr_ip;default:127.0.0.1" json:"docker_svr_ip"`
 	DockerSvrPort     int    `gorm:"docker_svr_port;default:2375" json:"docker_svr_port"`
 	ContainerRootPath string `gorm:"container_root_path;default:/opt/container-root" json:"container_root_path"`
+	DockerUser        string `gorm:"docker_user" json:"docker_user"`
+	DockerPasswd      string `gorm:"docker_passwd" json:"docker_passwd"`
 
 	CheckIPAddr string `gorm:"column:check_ip_addr;default:http://ddns.oray.com/checkip;https://ipinfo.io/ip;" json:"check_ip_addr"`
 }

@@ -48,6 +48,10 @@ func (d *DockerClient) SetHost(host string) {
 
 // 设置用户信息
 func (d *DockerClient) SetUserInfo(user string, pwd string) error {
+	if user == "" || pwd == "" {
+		return errors.New("user or pwd is empty")
+	}
+
 	d.auth = ""
 
 	authCfg := registry.AuthConfig{
@@ -151,6 +155,58 @@ func (d *DockerClient) GetVersion() (types.Version, error) {
 }
 
 // //////////////////////////////////////////////////////////////////
+// 推送镜像
+func (d *DockerClient) PushImage(imageName string, fun func(r *bufio.Reader) error) error {
+	cli, err := d.conn()
+	if err != nil {
+		return nil
+	}
+
+	defer cli.Close()
+
+	r, err := cli.ImagePush(context.Background(), imageName, types.ImagePushOptions{
+		All:          false,
+		RegistryAuth: d.auth,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	defer r.Close()
+
+	reader := bufio.NewReader(r)
+
+	if fun == nil {
+		for {
+			_, err := reader.ReadString('\n')
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+
+				return err
+			}
+		}
+	} else {
+		err = fun(reader)
+	}
+
+	return err
+}
+
+// 修改镜像tag
+func (d *DockerClient) ModifyImage(oldName string, newName string) error {
+	cli, err := d.conn()
+	if err != nil {
+		return err
+	}
+
+	defer cli.Close()
+
+	return cli.ImageTag(context.Background(), oldName, newName)
+}
+
 // 获取镜像
 func (d *DockerClient) GetImages(name string) ([]image.Summary, error) {
 	cli, err := d.conn()

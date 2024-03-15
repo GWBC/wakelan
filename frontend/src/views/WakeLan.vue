@@ -532,7 +532,7 @@ function onRemoteConfig(edit: boolean, host: string, datas: RemoteConfigInfo[]) 
 
 function getRemoteRandKey() {
   return new Promise<boolean>((resolve, reject) => {
-    AsyncFetch<string>(`${group}getRandKey`, null).then(infos => {
+    AsyncFetch<string>(`/api/public/getRandKey`, null).then(infos => {
       remoteRandKey.value = infos
       resolve(true)
     }).catch(error => {

@@ -254,16 +254,6 @@ func (w *WakeApi) getNetworklist(c *gin.Context) {
 	})
 }
 
-// 获取随机key
-func (w *WakeApi) getRandKey(c *gin.Context) {
-	cfg := db.DBOperObj().GetConfig()
-
-	c.JSON(200, gin.H{
-		"err":   "",
-		"infos": cfg.RandKey,
-	})
-}
-
 // 唤醒
 func (w *WakeApi) wakeLan(c *gin.Context) {
 	err := comm.WakeLan(c.Query("mac"))

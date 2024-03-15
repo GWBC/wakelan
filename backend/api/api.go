@@ -17,6 +17,18 @@ import (
 type Web struct {
 }
 
+func (a *Web) SetPublicAPI(r *gin.Engine) {
+	group := r.Group("/api/public")
+	group.GET("/getRandKey", func(c *gin.Context) {
+		cfg := db.DBOperObj().GetConfig()
+
+		c.JSON(200, gin.H{
+			"err":   "",
+			"infos": cfg.RandKey,
+		})
+	})
+}
+
 func (a *Web) SetWakeAPI(r *gin.Engine) {
 	api := WakeApi{}
 	api.Init()
@@ -34,7 +46,6 @@ func (a *Web) SetWakeAPI(r *gin.Engine) {
 	group.GET("/pingpc", api.pingPC)
 	group.GET("/editpcinfo", api.editPCInfo)
 	group.GET("/addnetworklist", api.addNetworklist)
-	group.GET("/getRandKey", api.getRandKey)
 }
 
 func (a *Web) SetRemoteAPI(r *gin.Engine) {
@@ -93,6 +104,9 @@ func (a *Web) SetDockerClientApi(r *gin.Engine) {
 	group.GET("/pullImage", api.PullImage)
 	group.GET("/getPullImageLog", api.GetPullImageLog)
 	group.POST("/runContainer", api.RunContainer)
+	group.GET("/pushImage", api.PushImage)
+	group.GET("/modifyImage", api.ModifyImage)
+	group.GET("/getPushImageLog", api.GetPushImageLog)
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -283,6 +297,9 @@ func (a *Web) Init(port string) {
 	/////////////////////////////////////////////////
 	//开启-后续Token验证
 	r.Use(a.CheckToken())
+
+	//设置公共接口
+	a.SetPublicAPI(r)
 
 	//设置唤醒接口
 	a.SetWakeAPI(r)

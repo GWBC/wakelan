@@ -1,8 +1,24 @@
 <template>
+    <el-dialog v-model="modifyDlgIsShow" append-to-body title="修改镜像" @open="onModifyDlgOpen">
+        <el-form :model="modifyDlgData">
+          <el-form-item label="老镜像名">
+            <el-input disabled v-model="modifyDlgData.oldName" />
+          </el-form-item>
+          <el-form-item label="新镜像名">
+            <el-input ref="newImageNameInput" placeholder="新镜像名" v-model="modifyDlgData.newName" />
+          </el-form-item>
+          <el-form-item>
+            <div class="w-full flex justify-end">
+                <el-button type="primary" @click="onImageNameModify">修改</el-button>
+            </div>            
+          </el-form-item>
+        </el-form>
+    </el-dialog>
+
     <el-dialog v-model="runDlgIsShow" append-to-body title="创建容器" @open="onRunDlgOpen">
         <el-form v-loading="loading" :model="dockerContainerCreate">
             <el-form-item label="容器名称">
-                <el-input placeholder="容器名为空，则使用随机名称" v-model="dockerContainerCreate.name" />
+                <el-input ref="containerNameInput" placeholder="容器名为空，则使用随机名称" v-model="dockerContainerCreate.name" />
             </el-form-item>
             <el-form-item label="重启策略">
                 <el-select v-model="dockerContainerCreate.restart_policy" placeholder="选择异常退出后重启策略" size="large"
@@ -77,7 +93,7 @@
                 <el-switch v-model="dockerContainerCreate.auto_remove" />
             </el-form-item>
             <el-form-item>
-                <div class="flex justify-end">
+                <div class="w-full flex justify-end">
                     <el-button @click="runDlgIsShow = false">取消</el-button>
                     <el-button type="primary" @click="onRunDlgOk">
                         运行
@@ -127,7 +143,7 @@
     </el-dialog>
 
     <el-card class="h-full" body-class="h-full !pb-1" :width="160">
-        <el-table table-layout="auto" class="!h-2/3" :data="imageDatas" stripe empty-text=" ">
+        <el-table table-layout="auto" class="!h-1/2" :data="imageDatas" stripe empty-text=" ">
             <el-table-column prop="id" label="ID" />
             <el-table-column prop="repostitory" label="仓库" />
             <el-table-column prop="tag" label="版本" />
@@ -162,17 +178,21 @@
                     <el-button type="success" link size="default" @click='onRun(scope.row)'>
                         运行
                     </el-button>
-                    <!-- <el-button type="success" link size="default" @click='onRun(scope.row)'>
+                    <el-button type="success" link size="default" @click='onModify(scope.row)'>
+                        修改
+                    </el-button>
+                    <el-button type="success" link size="default" @click='onPush(scope.row)'>
                         推送
-                    </el-button> -->
+                    </el-button>
                     <el-button type="danger" link size="default" @click='onDel(scope.row)'>
                         删除
                     </el-button>
                 </template>
             </el-table-column>
         </el-table>
-        <el-table class="!h-1/3" empty-text=" " :span-method="SpanMethod" :data="pullLogData.layer">
-            <el-table-column label="镜像" :width="200">
+        <div class="!h-1/2">
+            <el-table class="!h-1/2" empty-text=" " :span-method="SpanMethod" :data="pullLogData.layer">
+            <el-table-column label="拉取镜像" :width="200">
                 <template #default="scope">
                     {{ pullLogData.name }}
                 </template>
@@ -186,12 +206,6 @@
                     <span class="text-green-500 font-bold" v-else-if="scope.row.id === 'Success'">
                         {{ scope.row.status }}
                     </span>
-                    <el-icon v-else-if="scope.row.status === 'Downloading'">
-                        <Download />
-                    </el-icon>
-                    <el-icon v-else-if="scope.row.status === 'Extracting'">
-                        <Files />
-                    </el-icon>
                 </template>
             </el-table-column>
             <el-table-column label="进度">
@@ -201,6 +215,31 @@
                 </template>
             </el-table-column>
         </el-table>
+            <el-table class="!h-1/2" empty-text=" " :span-method="SpanMethod2" :data="pushLogData.layer">
+            <el-table-column label="推送镜像" :width="200">
+                <template #default="scope">
+                    {{ pushLogData.name }}
+                </template>
+            </el-table-column>
+            <el-table-column label="ID" :width="200" prop="id"></el-table-column>
+            <el-table-column label="类型" :width="100" prop="status">
+                <template #default="scope">
+                    <span class="text-red-500 font-bold" v-if="scope.row.id === 'Error'">
+                        {{ scope.row.status }}
+                    </span>
+                    <span class="text-green-500 font-bold" v-else-if="scope.row.id === 'Success'">
+                        {{ scope.row.status }}
+                    </span>
+                </template>
+            </el-table-column>
+            <el-table-column label="进度">
+                <template #default="scope">
+                    <el-progress v-if="scope.row.total_size > 0"
+                        :percentage="Math.floor((scope.row.cur_size / scope.row.total_size) * 100)" />
+                </template>
+            </el-table-column>
+        </el-table>
+        </div>        
     </el-card>
 </template>
 
@@ -284,6 +323,7 @@ const detailTitle = ref<string>('')
 
 const runDlgIsShow = ref(false)
 const dataLoding = ref(false)
+const containerNameInput = ref()
 
 const image_name = ref('')
 const image_infos = ref<ImagePullInfo[]>([])
@@ -297,6 +337,12 @@ const dlgMountInputShow = ref(false)
 const dlgMountInputRef = ref()
 const dlgMountInput = ref('')
 
+const modifyDlgIsShow = ref(false)
+const newImageNameInput = ref()
+const modifyDlgData = ref({
+    oldName: '',
+    newName: ''
+})
 
 const dockerNetworkName = ref<NetworkCardInfo[]>([])
 const dockerContainerCreate = ref<DockerContainerCreate>({} as DockerContainerCreate)
@@ -307,11 +353,57 @@ const pullLogData = ref<PullLogInfo>({
     layer: [] as PullLayerInfo[],
 })
 
+const pushLogData = ref<PullLogInfo>({
+    refresh: false,
+    name: '',
+    layer: [] as PullLayerInfo[],
+})
+
 let websocket: WBSocket | null = null
+let websocket2: WBSocket | null = null
 
 const props = defineProps<{
     group: string
 }>()
+
+function onImageNameModify(){
+    let newName = modifyDlgData.value.newName
+
+    if (newName.length == 0){
+        ElMessage.warning('请输入新的镜像名称')
+        return
+    }
+
+    
+    if (newName.indexOf(':') == -1){
+        newName += ":latest"
+    }
+
+    AsyncFetch<void>(`${props.group}modifyImage?old_name=${modifyDlgData.value.oldName}&new_name=${newName}`,
+     null).then((infos) => {
+        getImages()
+        modifyDlgIsShow.value = false
+    })
+}
+
+function onModifyDlgOpen() {
+    nextTick(()=>{
+        newImageNameInput.value.focus()
+    })
+}
+
+function onModify(row: ImageInfo){
+    modifyDlgData.value.oldName = row.repostitory + ":" + row.tag
+    modifyDlgData.value.newName = ''    
+    modifyDlgIsShow.value = true
+}
+
+function onPush(row: ImageInfo){
+    let image = `${row.repostitory}:${row.tag}`
+    AsyncFetch<void>(`${props.group}pushImage?name=${image}`, null).then((infos) => {
+        ElMessage.success(`异步推送镜像 ${image} 成功`)
+    })
+}
 
 function onRunDlgOk() {
     loading.value = true
@@ -379,6 +471,10 @@ function onDlgMountClose(port: string) {
 }
 
 function onRunDlgOpen() {
+    nextTick(() => {
+        containerNameInput.value.focus()
+    })
+
     AsyncFetch<NetworkCardInfo[]>(`${props.group}getNetworkCards`, null).then((infos) => {
         dockerNetworkName.value = infos
     })
@@ -391,6 +487,28 @@ function SpanMethod(data: { row: any, column: any, rowIndex: number, columnIndex
         }
 
         return [pullLogData.value.layer.length, 1]
+    }
+
+    if (data.row.id == "Error" || data.row.id == "Success") {
+        if (data.columnIndex == 0) {
+            return [1, 1]
+        } else if (data.columnIndex == 1 || data.columnIndex == 3) {
+            return [0, 0]
+        } else {
+            return [1, 3]
+        }
+    }
+
+    return [1, 1]
+}
+
+function SpanMethod2(data: { row: any, column: any, rowIndex: number, columnIndex: number }): number[] {
+    if (data.columnIndex == 0) {
+        if (data.rowIndex != 0) {
+            return [0, 0]
+        }
+
+        return [pushLogData.value.layer.length, 1]
     }
 
     if (data.row.id == "Error" || data.row.id == "Success") {
@@ -434,14 +552,25 @@ function onPull(name: string) {
         return
     }
 
+    if(tName.indexOf(':') == -1){
+        tName += ":latest"
+    }
+
     AsyncFetch<void>(`${props.group}pullImage?name=${tName}`, null).then((infos) => {
         ElMessage.success(`异步拉取镜像 ${tName} 成功`)
     })
 }
 
 function onDel(row: ImageInfo) {
+    let imageName = `${row.repostitory}:${row.tag}`
+
+    //如果是无效的镜像，只能通过ID删除
+    if (row.repostitory == "<none>" || row.tag == "<none>"){
+        imageName = row.id
+    }
+
     ElMessageBox.confirm(
-        `是否删除镜像：${row.repostitory}`,
+        `是否删除镜像：${imageName}`,
         `删除`,
         {
             confirmButtonText: '删除',
@@ -450,9 +579,9 @@ function onDel(row: ImageInfo) {
         }
     ).then(() => {
         dataLoding.value = true
-        AsyncFetch(`${props.group}delImage?id=${row.id}`, null).then(() => {
-            ElMessage.success(`删除镜像 ${row.repostitory} 成功`)
-            imageDatas.value = imageDatas.value.filter(item => item.id != row.id)
+        AsyncFetch(`${props.group}delImage?id=${imageName}`, null).then(() => {
+            ElMessage.success(`删除镜像 ${imageName} 成功`)
+            imageDatas.value = imageDatas.value.filter(item => `${item.repostitory}:${item.tag}` != imageName)
             dataLoding.value = false
         }).catch(err => {
             dataLoding.value = false
@@ -526,7 +655,6 @@ function getImages() {
 
 function getPullLog() {
     websocket = new WBSocket(6)
-
     websocket.SetMsgFun((event: MessageEvent) => {
         let msg = event.data.toString()
         pullLogData.value = JSON.parse(msg)
@@ -536,6 +664,14 @@ function getPullLog() {
     })
 
     websocket.Conn(`ws://${window.location.host}/${props.group}getPullImageLog`)
+
+    websocket2 = new WBSocket(6)
+    websocket2.SetMsgFun((event: MessageEvent) => {
+        let msg = event.data.toString()
+        pushLogData.value = JSON.parse(msg)
+    })
+
+    websocket2.Conn(`ws://${window.location.host}/${props.group}getPushImageLog`)
 }
 
 onMounted(() => {
