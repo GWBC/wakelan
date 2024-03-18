@@ -309,7 +309,7 @@ func (d *DockerClient) SearchImage(imageName string) ([]registry.SearchResult, e
 }
 
 // 导出镜像
-func (d *DockerClient) ExportImage(imageName string, fileName string) (string, error) {
+func (d *DockerClient) SaveImage(imageName string, fileName string) (string, error) {
 	cli, err := d.conn()
 	if err != nil {
 		return "", err
@@ -349,7 +349,7 @@ func (d *DockerClient) ExportImage(imageName string, fileName string) (string, e
 }
 
 // 导入镜像
-func (d *DockerClient) ImportImage(fileName string) error {
+func (d *DockerClient) LoadImage(fileName string) error {
 	cli, err := d.conn()
 	if err != nil {
 		return err
@@ -372,6 +372,77 @@ func (d *DockerClient) ImportImage(fileName string) error {
 		return err
 	}
 	defer r.Body.Close()
+
+	return nil
+}
+
+// 导出容器
+func (d *DockerClient) ExportContainer(name string, fileName string) (string, error) {
+	cli, err := d.conn()
+	if err != nil {
+		return "", err
+	}
+
+	defer cli.Close()
+
+	r, err := cli.ContainerExport(context.Background(), name)
+	if err != nil {
+		return "", err
+	}
+	defer r.Close()
+
+	os.MkdirAll(path.Dir(fileName), 0755)
+
+	fileName += ".gz"
+
+	gzFile, err := os.Create(fileName)
+	if err != nil {
+		return "", err
+	}
+	defer gzFile.Close()
+
+	gzWriter := gzip.NewWriter(gzFile)
+	if gzWriter == nil {
+		return "", errors.New("gzip new error")
+	}
+
+	defer gzWriter.Close()
+
+	_, err = io.Copy(gzWriter, r)
+	if err != nil {
+		return "", err
+	}
+
+	return fileName, nil
+}
+
+// 导入容器
+func (d *DockerClient) ImportImage(fileName string) error {
+	cli, err := d.conn()
+	if err != nil {
+		return err
+	}
+
+	defer cli.Close()
+
+	gzFile, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+
+	gzReader, err := gzip.NewReader(gzFile)
+	if err != nil {
+		return err
+	}
+
+	r, err := cli.ImageImport(context.Background(), types.ImageImportSource{
+		Source:     gzReader,
+		SourceName: "-",
+	}, "", types.ImageImportOptions{})
+	if err != nil {
+		return err
+	}
+	defer r.Close()
 
 	return nil
 }
@@ -483,6 +554,7 @@ type DockerContainerCreate struct {
 	Ports         []string                    `json:"ports"`          //端口映射 public:private/proto，public-public:private-private/proto
 	Mounts        []string                    `json:"mounts"`         //目录映射 public:private
 	AutoRemove    bool                        `json:"auto_remove"`    //退出删除容器
+	Env           []string                    `json:"env"`            //环境变量
 }
 
 // 运行容器
@@ -517,6 +589,7 @@ func (d *DockerClient) RunContainer(cfg *DockerContainerCreate, isUpdate bool) e
 	containerCfg := container.Config{}
 	containerCfg.Image = cfg.Image
 	containerCfg.Tty = true
+	containerCfg.Env = cfg.Env
 	containerCfg.Entrypoint = append(containerCfg.Entrypoint, strings.Split(cfg.Cmd, " ")...)
 
 	//端口、目录映射配置

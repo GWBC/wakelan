@@ -161,7 +161,7 @@ func (d *DockerClient) mkdir(dirPath string) error {
 	return err
 }
 
-func (d *DockerClient) loadConfig() {
+func (d *DockerClient) loadConfig() *db.GlobalInfo {
 	cfg := db.DBOperObj().GetConfig()
 	if cfg.DockerEnableTCP {
 		d.cli.SetHost(fmt.Sprintf("tcp://%s:%d", cfg.DockerSvrIP, cfg.DockerSvrPort))
@@ -173,17 +173,19 @@ func (d *DockerClient) loadConfig() {
 
 		data, err := base64.URLEncoding.DecodeString(pwd)
 		if err != nil {
-			return
+			return cfg
 		}
 
 		data, err = comm.AES_CBC_Open(data, []byte(cfg.RandKey), []byte("FF9B491CE5EE6BAF"))
 		if err != nil {
-			return
+			return cfg
 		}
 
 		pwd = strings.TrimRight(string(data), "\x00")
 		d.cli.SetUserInfo(cfg.DockerUser, pwd)
 	}
+
+	return cfg
 }
 
 // 推送镜像
@@ -203,6 +205,56 @@ func (d *DockerClient) PushImage(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"err": "",
+	})
+}
+
+// 备份容器
+func (d *DockerClient) BackupContainer(c *gin.Context) {
+	cfg := d.loadConfig()
+	fPath := path.Join(cfg.ContainerRootPath, "container-backup")
+
+	name := c.Query("name")
+	fName := strings.ReplaceAll(name, ":", "-")
+	fName = strings.ReplaceAll(fName, "/", "-")
+	fName = fName + "-" + time.Now().Format("20060102150405") + ".tar"
+
+	fName, err := d.cli.ExportContainer(name, path.Join(fPath, fName))
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err":   "",
+		"infos": fName,
+	})
+}
+
+// 备份镜像
+func (d *DockerClient) BackupImage(c *gin.Context) {
+	cfg := d.loadConfig()
+	fPath := path.Join(cfg.ContainerRootPath, "image-backup")
+
+	name := c.Query("name")
+	fName := strings.ReplaceAll(name, ":", "-")
+	fName = strings.ReplaceAll(fName, "/", "-")
+	fName = fName + "-" + time.Now().Format("20060102150405") + ".tar"
+
+	fName, err := d.cli.SaveImage(name, path.Join(fPath, fName))
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err":   "",
+		"infos": fName,
 	})
 }
 
@@ -244,6 +296,7 @@ func (d *DockerClient) RunContainer(c *gin.Context) {
 	}
 
 	cfg := db.DBOperObj().GetConfig()
+
 	for i, mount := range info.Mounts {
 		if len(mount) == 0 {
 			continue
