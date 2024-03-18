@@ -1,17 +1,17 @@
 <template>
     <el-dialog v-model="modifyDlgIsShow" append-to-body title="修改镜像" @open="onModifyDlgOpen">
         <el-form :model="modifyDlgData">
-          <el-form-item label="老镜像名">
-            <el-input disabled v-model="modifyDlgData.oldName" />
-          </el-form-item>
-          <el-form-item label="新镜像名">
-            <el-input ref="newImageNameInput" placeholder="新镜像名" v-model="modifyDlgData.newName" />
-          </el-form-item>
-          <el-form-item>
-            <div class="w-full flex justify-end">
-                <el-button type="primary" @click="onImageNameModify">修改</el-button>
-            </div>            
-          </el-form-item>
+            <el-form-item label="老镜像名">
+                <el-input disabled v-model="modifyDlgData.oldName" />
+            </el-form-item>
+            <el-form-item label="新镜像名">
+                <el-input ref="newImageNameInput" placeholder="新镜像名" v-model="modifyDlgData.newName" />
+            </el-form-item>
+            <el-form-item>
+                <div class="w-full flex justify-end">
+                    <el-button type="primary" @click="onImageNameModify">修改</el-button>
+                </div>
+            </el-form-item>
         </el-form>
     </el-dialog>
 
@@ -40,6 +40,28 @@
                     <el-option v-for="item in dockerNetworkName" :key="item.name" :label="item.name"
                         :value="item.name"></el-option>
                 </el-select>
+            </el-form-item>
+            <el-form-item label="环境变量">
+                <div class="flex flex-wrap gap-2 w-full">
+                    <el-tag v-for="tag in dockerContainerCreate.env" :key="tag" closable :disable-transitions="false"
+                        @close="onDlgEnvClose(tag)">
+                        {{ tag }}
+                    </el-tag>
+                    <el-tooltip content="变量=值" placement="top-start">
+                        <el-input v-if="dlgEnvInputShow" class="!w-40" ref="dlgEnvInputRef" v-model="dlgEnvInput"
+                            size="small" @keyup.enter="onEnvInputConfirm" @blur="onEnvInputConfirm" />
+                        <el-button type="primary" v-else size="small" @click="showEnvInput">
+                            <el-icon>
+                                <Plus />
+                            </el-icon>
+                        </el-button>
+                    </el-tooltip>
+                    <el-button class="!ml-0" type="danger" size="small" @click="onEnvClear">
+                        <el-icon>
+                            <Close />
+                        </el-icon>
+                    </el-button>
+                </div>
             </el-form-item>
             <el-form-item label="端口映射">
                 <div class="flex flex-wrap gap-2 w-full">
@@ -142,7 +164,7 @@
         </el-descriptions>
     </el-dialog>
 
-    <el-card class="h-full" body-class="h-full !pb-1" :width="160">
+    <el-card v-loading="dataLoding" class="h-full" body-class="h-full !pb-1" :width="160">
         <el-table table-layout="auto" class="!h-1/2" :data="imageDatas" stripe empty-text=" ">
             <el-table-column prop="id" label="ID" />
             <el-table-column prop="repostitory" label="仓库" />
@@ -184,6 +206,9 @@
                     <el-button type="success" link size="default" @click='onPush(scope.row)'>
                         推送
                     </el-button>
+                    <el-button type="success" link size="default" @click='onBackup(scope.row)'>
+                        备份
+                    </el-button>
                     <el-button type="danger" link size="default" @click='onDel(scope.row)'>
                         删除
                     </el-button>
@@ -192,54 +217,54 @@
         </el-table>
         <div class="!h-1/2">
             <el-table class="!h-1/2" empty-text=" " :span-method="SpanMethod" :data="pullLogData.layer">
-            <el-table-column label="拉取镜像" :width="200">
-                <template #default="scope">
-                    {{ pullLogData.name }}
-                </template>
-            </el-table-column>
-            <el-table-column label="ID" :width="200" prop="id"></el-table-column>
-            <el-table-column label="类型" :width="100" prop="status">
-                <template #default="scope">
-                    <span class="text-red-500 font-bold" v-if="scope.row.id === 'Error'">
-                        {{ scope.row.status }}
-                    </span>
-                    <span class="text-green-500 font-bold" v-else-if="scope.row.id === 'Success'">
-                        {{ scope.row.status }}
-                    </span>
-                </template>
-            </el-table-column>
-            <el-table-column label="进度">
-                <template #default="scope">
-                    <el-progress v-if="scope.row.total_size > 0"
-                        :percentage="Math.floor((scope.row.cur_size / scope.row.total_size) * 100)" />
-                </template>
-            </el-table-column>
-        </el-table>
+                <el-table-column label="拉取镜像" :width="200">
+                    <template #default="scope">
+                        {{ pullLogData.name }}
+                    </template>
+                </el-table-column>
+                <el-table-column label="ID" :width="200" prop="id"></el-table-column>
+                <el-table-column label="类型" :width="100" prop="status">
+                    <template #default="scope">
+                        <span class="text-red-500 font-bold" v-if="scope.row.id === 'Error'">
+                            {{ scope.row.status }}
+                        </span>
+                        <span class="text-green-500 font-bold" v-else-if="scope.row.id === 'Success'">
+                            {{ scope.row.status }}
+                        </span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="进度">
+                    <template #default="scope">
+                        <el-progress v-if="scope.row.total_size > 0"
+                            :percentage="Math.floor((scope.row.cur_size / scope.row.total_size) * 100)" />
+                    </template>
+                </el-table-column>
+            </el-table>
             <el-table class="!h-1/2" empty-text=" " :span-method="SpanMethod2" :data="pushLogData.layer">
-            <el-table-column label="推送镜像" :width="200">
-                <template #default="scope">
-                    {{ pushLogData.name }}
-                </template>
-            </el-table-column>
-            <el-table-column label="ID" :width="200" prop="id"></el-table-column>
-            <el-table-column label="类型" :width="100" prop="status">
-                <template #default="scope">
-                    <span class="text-red-500 font-bold" v-if="scope.row.id === 'Error'">
-                        {{ scope.row.status }}
-                    </span>
-                    <span class="text-green-500 font-bold" v-else-if="scope.row.id === 'Success'">
-                        {{ scope.row.status }}
-                    </span>
-                </template>
-            </el-table-column>
-            <el-table-column label="进度">
-                <template #default="scope">
-                    <el-progress v-if="scope.row.total_size > 0"
-                        :percentage="Math.floor((scope.row.cur_size / scope.row.total_size) * 100)" />
-                </template>
-            </el-table-column>
-        </el-table>
-        </div>        
+                <el-table-column label="推送镜像" :width="200">
+                    <template #default="scope">
+                        {{ pushLogData.name }}
+                    </template>
+                </el-table-column>
+                <el-table-column label="ID" :width="200" prop="id"></el-table-column>
+                <el-table-column label="类型" :width="100" prop="status">
+                    <template #default="scope">
+                        <span class="text-red-500 font-bold" v-if="scope.row.id === 'Error'">
+                            {{ scope.row.status }}
+                        </span>
+                        <span class="text-green-500 font-bold" v-else-if="scope.row.id === 'Success'">
+                            {{ scope.row.status }}
+                        </span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="进度">
+                    <template #default="scope">
+                        <el-progress v-if="scope.row.total_size > 0"
+                            :percentage="Math.floor((scope.row.cur_size / scope.row.total_size) * 100)" />
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
     </el-card>
 </template>
 
@@ -249,8 +274,6 @@ import { AsyncFetch } from '@/lib/comm';
 import { WBSocket } from '@/lib/websocket'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
-
-const xx = ref(true)
 
 interface ImageInfo {
     repostitory: string
@@ -304,9 +327,10 @@ interface DockerContainerCreate {
     cmd: string                         //执行命令
     privileged: boolean                 //开启特权
     net_name: string                    //网络名称
-    ports: string[]                     //端口映射 public:private/proto，public-public:private-private/proto
+    ports: string[]                     //端口映射 public:private/proto public-public:private-private/proto
     mounts: string[]                    //目录映射 public:private
     auto_remove: boolean                //自动删除
+    env: string[]                       //环境变量
 }
 
 interface NetworkCardInfo {
@@ -329,6 +353,10 @@ const image_name = ref('')
 const image_infos = ref<ImagePullInfo[]>([])
 const image_infos_dlg_show = ref(false)
 
+const dlgEnvInputShow = ref(false)
+const dlgEnvInputRef = ref()
+const dlgEnvInput = ref('')
+
 const dlgPortInputShow = ref(false)
 const dlgPortInputRef = ref()
 const dlgPortInput = ref('')
@@ -340,8 +368,9 @@ const dlgMountInput = ref('')
 const modifyDlgIsShow = ref(false)
 const newImageNameInput = ref()
 const modifyDlgData = ref({
+    oldId: '',
     oldName: '',
-    newName: ''
+    newName: '',
 })
 
 const dockerNetworkName = ref<NetworkCardInfo[]>([])
@@ -366,42 +395,64 @@ const props = defineProps<{
     group: string
 }>()
 
-function onImageNameModify(){
+const empty_image_name = "<none>:<none>"
+
+function onImageNameModify() {
+    let oldName = modifyDlgData.value.oldName
     let newName = modifyDlgData.value.newName
 
-    if (newName.length == 0){
+    if (newName.length == 0) {
         ElMessage.warning('请输入新的镜像名称')
         return
     }
 
-    
-    if (newName.indexOf(':') == -1){
+    if (oldName == empty_image_name) {
+        oldName = modifyDlgData.value.oldId
+    }
+
+    if (newName.indexOf(':') == -1) {
         newName += ":latest"
     }
 
-    AsyncFetch<void>(`${props.group}modifyImage?old_name=${modifyDlgData.value.oldName}&new_name=${newName}`,
-     null).then((infos) => {
-        getImages()
-        modifyDlgIsShow.value = false
-    })
+    AsyncFetch<void>(`${props.group}modifyImage?old_name=${oldName}&new_name=${newName}`,
+        null).then((infos) => {
+            getImages()
+            modifyDlgIsShow.value = false
+        })
 }
 
 function onModifyDlgOpen() {
-    nextTick(()=>{
+    nextTick(() => {
         newImageNameInput.value.focus()
     })
 }
 
-function onModify(row: ImageInfo){
+function onBackup(row: ImageInfo) {
+    let image = `${row.repostitory}:${row.tag}`
+    if (image == empty_image_name) {
+        image = row.id
+    }
+
+    dataLoding.value = true
+    AsyncFetch<void>(`${props.group}backupImage?name=${image}`, null).then((infos) => {
+        dataLoding.value = false
+        ElMessage.success(`备份镜像 ${image} 成功`)
+    }).catch((err) =>{
+        dataLoding.value = false
+    })
+}
+
+function onModify(row: ImageInfo) {
+    modifyDlgData.value.oldId = row.id
     modifyDlgData.value.oldName = row.repostitory + ":" + row.tag
-    modifyDlgData.value.newName = ''    
+    modifyDlgData.value.newName = ''
     modifyDlgIsShow.value = true
 }
 
-function onPush(row: ImageInfo){
+function onPush(row: ImageInfo) {
     let image = `${row.repostitory}:${row.tag}`
     AsyncFetch<void>(`${props.group}pushImage?name=${image}`, null).then((infos) => {
-        ElMessage.success(`异步推送镜像 ${image} 成功`)
+        ElMessage.success(`推送镜像 ${image} 任务创建成功`)
     })
 }
 
@@ -416,12 +467,39 @@ function onRunDlgOk() {
     })
 }
 
+function onEnvClear() {
+    dockerContainerCreate.value.ports.length = 0
+}
+
 function onPortClear() {
     dockerContainerCreate.value.ports.length = 0
 }
 
 function onMountClear() {
     dockerContainerCreate.value.mounts.length = 0
+}
+
+function showEnvInput() {
+    dlgEnvInputShow.value = true
+    nextTick(() => {
+        dlgEnvInputRef.value!.input!.focus()
+    })
+}
+
+function onEnvInputConfirm() {
+    if (dlgEnvInput.value) {
+        dockerContainerCreate.value.env.push(dlgEnvInput.value)
+    }
+
+    dlgEnvInputShow.value = false
+    dlgEnvInput.value = ''
+}
+
+function onDlgEnvClose(env: string) {
+    let index = dockerContainerCreate.value.env.indexOf(env)
+    if (index != -1) {
+        dockerContainerCreate.value.env.splice(index, 1)
+    }
 }
 
 function showPortInput() {
@@ -552,12 +630,12 @@ function onPull(name: string) {
         return
     }
 
-    if(tName.indexOf(':') == -1){
+    if (tName.indexOf(':') == -1) {
         tName += ":latest"
     }
 
     AsyncFetch<void>(`${props.group}pullImage?name=${tName}`, null).then((infos) => {
-        ElMessage.success(`异步拉取镜像 ${tName} 成功`)
+        ElMessage.success(`拉取镜像 ${tName} 任务创建成功`)
     })
 }
 
@@ -565,7 +643,7 @@ function onDel(row: ImageInfo) {
     let imageName = `${row.repostitory}:${row.tag}`
 
     //如果是无效的镜像，只能通过ID删除
-    if (row.repostitory == "<none>" || row.tag == "<none>"){
+    if (imageName == empty_image_name) {
         imageName = row.id
     }
 
@@ -601,17 +679,22 @@ function onRun(row: ImageInfo) {
         ports: [] as string[],
         mounts: [] as string[],
         auto_remove: false,
+        env: [] as string[],
     }
 
     AsyncFetch<ImageDetailInfo>(`${props.group}getImageDetails?id=${row.id}`, null).then((infos) => {
         dockerContainerCreate.value.image = row.repostitory + ":" + row.tag
         dockerContainerCreate.value.cmd = infos.cmd
+        dockerContainerCreate.value.env = infos.env
+
         infos.exposed_ports?.forEach((value, key) => {
             let pubPort = value.port
             if (pubPort == "80") {
                 pubPort = "8080"
-            }else if(pubPort == "443"){
+            } else if (pubPort == "443") {
                 pubPort = "8443"
+            }else if(parseInt(pubPort) > 20 && parseInt(pubPort) < 30){
+                pubPort = "22" + pubPort
             }
 
             dockerContainerCreate.value.ports.push(`${pubPort}:${value.port}/${value.proto}`)

@@ -138,6 +138,9 @@
                         <el-button type="success" link size="default" @click="onEdit(scope.row)">
                             修改
                         </el-button>
+                        <el-button type="success" link size="default" @click="onBackup(scope.row)">
+                            备份
+                        </el-button>
                         <el-button type="danger" link size="default" @click="onDelete(scope.row)">
                             删除
                         </el-button>
@@ -337,6 +340,17 @@ function onLog(row: ContainerInfo) {
     logTitle.value = `${row.name} 日志`
     logUrl.value = `ws://${window.location.host}/${props.group}getLogsContainer?name=${row.name}`
     logShow.value = true
+}
+
+function onBackup(row: ContainerInfo) {
+    let name = row.name
+    dataLoding.value = true
+    AsyncFetch(`${props.group}backupContainer?name=${name}`, null).then(() => {
+        ElMessage.success(`备份容器 ${name} 成功`)
+        dataLoding.value = false
+    }).catch(err => {
+        dataLoding.value = false
+    })
 }
 
 function onEditModify(name: string, newName: string) {
