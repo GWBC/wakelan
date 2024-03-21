@@ -32,7 +32,7 @@ import { onMounted, ref } from 'vue'
 
 const group: string = 'api/docker/'
 
-const cur_select = ref('import')
+const cur_select = ref('image')
 
 onMounted(() => {
 })

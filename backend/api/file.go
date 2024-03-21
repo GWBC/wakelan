@@ -145,6 +145,8 @@ func (f *FileTransfer) MoveToDockerBackup(name string, fileName string) error {
 			if err != nil {
 				return err
 			}
+
+			db.DBLog("文件转移", "%s 文件转移到容器备份目录", name)
 		}
 	}
 
