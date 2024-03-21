@@ -14,6 +14,9 @@
         <el-tab-pane class="h-full" name="network" label="网络">
           <Networks v-if="cur_select == 'network'" :group="group" />
         </el-tab-pane>
+        <el-tab-pane class="h-full" name="import" label="导入">
+          <Import v-if="cur_select == 'import'" :group="group" />
+        </el-tab-pane>
       </el-tabs>
     </template>
   </MainPage>
@@ -24,13 +27,12 @@ import MainPage from '@/components/MainPage.vue'
 import Images from '@/components/docker/Images.vue'
 import Networks from '@/components/docker/Networks.vue'
 import Containers from '@/components/docker/Containers.vue'
-import { computed, onMounted, ref } from 'vue'
-import { AsyncFetch } from '@/lib/comm'
-import { ElMessage } from 'element-plus'
+import Import from '@/components/docker/Import.vue'
+import { onMounted, ref } from 'vue'
 
 const group: string = 'api/docker/'
 
-const cur_select = ref('image')
+const cur_select = ref('import')
 
 onMounted(() => {
 })

@@ -2,31 +2,20 @@
     <el-dialog :append-to-body=true @open="onOpen">
         <RemoteForm v-model="cfgDlgShow" :host="host" :rand-key="props.randKey" :data="cfgDlgData" @submit="onSubmit" />
         <el-container>
-            <el-header v-show="props.edit">
-                <el-row :gutter="10">
-                    <el-col :span="16" />
-                    <el-col :span="4">
-                        <el-button :style="{ width: '100%' }" @click="addConfig" type="primary">添加</el-button>
-                    </el-col>
-                    <el-col :span="4">
-                        <el-button :style="{ width: '100%' }" @click="onSetting" type="success">提交</el-button>
-                    </el-col>
-                </el-row>
-            </el-header>
             <el-main>
                 <el-table height="200" :data="datas" empty-text=" " @row-dblclick="onDBClick">
                     <el-table-column label="协议" prop="remote.type">
                         <template #default="scope">
                             <el-tag v-if="scope.row.remote.type == RemoteType.RDP" effect="dark">{{
-                                p2s[scope.row.remote.type] }}</el-tag>
+        p2s[scope.row.remote.type] }}</el-tag>
                             <el-tag v-if="scope.row.remote.type == RemoteType.VNC" effect="dark" type="info">{{
-                                p2s[scope.row.remote.type] }}</el-tag>
+        p2s[scope.row.remote.type] }}</el-tag>
                             <el-tag v-if="scope.row.remote.type == RemoteType.SSH" effect="dark" type="warning">{{
-                                p2s[scope.row.remote.type] }}</el-tag>
+        p2s[scope.row.remote.type] }}</el-tag>
                             <el-tag v-if="scope.row.remote.type == RemoteType.TELNET" effect="dark" type="danger">{{
-                                p2s[scope.row.remote.type] }}</el-tag>
+        p2s[scope.row.remote.type] }}</el-tag>
                             <el-tag v-if="scope.row.remote.type == RemoteType.HTTP" effect="dark" type="success">{{
-                                p2s[scope.row.remote.type] }}</el-tag>
+        p2s[scope.row.remote.type] }}</el-tag>
                         </template>
                     </el-table-column>
                     <el-table-column label="主机" prop="remote.host"></el-table-column>
@@ -38,10 +27,16 @@
                     </el-table-column>
                 </el-table>
             </el-main>
+            <el-footer v-show="props.edit">
+                <div class="w-full flex justify-end">
+                    <el-button class="w-36" @click="addConfig" type="primary">添加</el-button>
+                    <el-button class="w-36" @click="onSetting" type="success">提交</el-button>
+                </div>
+            </el-footer>
         </el-container>
     </el-dialog>
 </template>
-        
+
 <script setup lang="ts">
 import { DeepCopy } from '@/lib/comm'
 import RemoteForm from './RemoteForm.vue'

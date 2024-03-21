@@ -185,7 +185,7 @@ function onSubmit() {
         data.sftp.pwd = data.remote.pwd
     }
 
-    data.id = data.remote.host + data.remote.port
+    data.id = data.remote.type + ':' + + data.remote.port
 
     if (props.data != null) {
         if (data.remote.pwd != props.data.remote.pwd) {

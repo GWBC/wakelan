@@ -1,8 +1,7 @@
-
 <template>
   <Remote v-model="remoteShow" :conn-info="remoteConnInfo" />
-  <RemoteConfig v-model="remoteCfgShow" :host="remoteHost" :data="remoteInfo" :edit="remoteEdit" :rand-key="remoteRandKey"
-    @submit="onRemoteConfig" />
+  <RemoteConfig v-model="remoteCfgShow" :host="remoteHost" :data="remoteInfo" :edit="remoteEdit"
+    :rand-key="remoteRandKey" @submit="onRemoteConfig" />
   <el-dialog v-model="addPCInfoDlgShow" :append-to-body=true @close="closeAddPCInfoDlg" @open="openAddPCInfoDlg">
     <el-form :model="addPCInfoDlgData" label-width="auto">
       <el-form-item label="地址">
@@ -87,7 +86,8 @@
           </el-table-column>
           <el-table-column label="编辑">
             <template #default="scope">
-              <el-switch @change="(val: boolean) => { editChange(val, scope.row) }" v-model="scope.row.edit"></el-switch>
+              <el-switch @change="(val: boolean) => { editChange(val, scope.row) }"
+                v-model="scope.row.edit"></el-switch>
             </template>
           </el-table-column>
           <el-table-column width="180" fixed="right" label="操作">
@@ -236,8 +236,17 @@ function addPCInfoDlgSubmit() {
     return
   }
 
-  AsyncFetch(`${group}addnetworklist?ip=${addPCInfoDlgData.value.ip}&mac=${addPCInfoDlgData.value.mac}&`, null).then(() => {
-    table_data.value.push(addPCInfoDlgData.value)
+  AsyncFetch(`${group}addnetworklist?ip=${addPCInfoDlgData.value.ip}&mac=${addPCInfoDlgData.value.mac}&describe=${addPCInfoDlgData.value.manuf}`, null).then(() => {
+    let index = table_data.value.findIndex(item => item.mac == addPCInfoDlgData.value.mac)
+    if (index < 0) {
+      table_data.value.push(addPCInfoDlgData.value)
+    } else {
+      let item = table_data.value[index]
+      item.ip = addPCInfoDlgData.value.ip
+      item.mac = addPCInfoDlgData.value.mac
+      item.manuf = addPCInfoDlgData.value.manuf
+    }
+
     addPCInfoDlgShow.value = false
   })
 }
@@ -460,6 +469,13 @@ function onOpenRemote(pcInfo: PCInfo) {
       return
     }
 
+    let host = data[0].remote.host
+
+    data[0].remote.host = pcInfo.ip
+    if (data[0].sftp.host == host) {
+      data[0].sftp.host = pcInfo.ip
+    }
+
     remoteShow.value = true
     remoteConnInfo.value = data[0]
   } else {
@@ -470,6 +486,15 @@ function onOpenRemote(pcInfo: PCInfo) {
       data = JSON.parse(pcInfo.attach_info.remote)
     } catch (error) {
       data = []
+    }
+
+    for (let i = 0; i < data.length; ++i) {
+      let host = data[i].remote.host
+
+      data[i].remote.host = pcInfo.ip
+      if (data[i].sftp.host == host) {
+        data[i].sftp.host = pcInfo.ip
+      }
     }
 
     remoteInfo.value = data
@@ -492,6 +517,15 @@ function onRemoteCfg(pcInfo: PCInfo) {
       data = JSON.parse(pcInfo.attach_info.remote)
     } catch (error) {
       data = []
+    }
+
+    for (let i = 0; i < data.length; ++i) {
+      let host = data[i].remote.host
+      data[i].remote.host = pcInfo.ip
+
+      if (data[i].sftp.host == host) {
+        data[i].sftp.host = pcInfo.ip
+      }
     }
 
     remoteInfo.value = data
