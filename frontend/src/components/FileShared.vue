@@ -6,32 +6,35 @@
                     :before-remove="remove" multiple>
                     <el-icon class="el-icon--upload"><upload-filled /></el-icon>
                     <div class="el-upload__text">
-                        将文件放到这里或 <em>点击上传</em>
+                        上传[<span class="text-green-500">文件</span>/<span class="text-red-500">Docker备份</span>]文件
+                        <em>点击上传</em>
                     </div>
                 </el-upload>
             </el-card>
             <el-card class="flex-[7]" body-class="h-full !pb-1">
-                <el-table class="!h-[calc(100%-20px)]" :data="metaDatas" empty-text=" " stripe>
-                    <el-table-column prop="time" label="时间" min-width="100" />
-                    <el-table-column prop="name" label="文件名" min-width="200" />
-                    <el-table-column label="进度" min-width="100">
+                <el-table class="!h-[calc(100%-20px)]" table-layout="auto" :data="metaDatas" empty-text=" " stripe>
+                    <el-table-column prop="time" label="时间" />
+                    <el-table-column prop="name" label="文件名" />
+                    <el-table-column prop="size" label="大小">
+                        <template #default="scope">
+                            {{ (scope.row.size / 1024 / 1024).toFixed(2) }} MB
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="进度">
                         <template #default="scope">
                             <el-tag class="down_btn" v-if="scope.row.index == scope.row.size" type="success"
                                 effect="dark">100%</el-tag>
                             <el-tag v-else type="info" class="down_btn" effect="dark">{{ Math.floor(100 *
-                                (scope.row.index / scope.row.size)) }}%</el-tag>
+        (scope.row.index / scope.row.size)) }}%</el-tag>
                         </template>
                     </el-table-column>
                     <el-table-column fixed="right" label="操作" min-width="100">
                         <template #default="scope">
-                            <el-row>
-                                <el-col :span="8">
-                                    <el-button class="down_btn" v-if="scope.row.index != scope.row.size" disabled
-                                        type="info">下载</el-button>
-                                    <el-button class="down_btn" v-else size="small" type="warning"
-                                        @click="download(scope.row)">下载</el-button>
-                                </el-col>
-                            </el-row>
+                            <el-button link
+                                v-if="scope.row.name.startsWith('docker_backup_') && scope.row.index == scope.row.size"
+                                size="small" type="primary" @click="move(scope.row)">转移</el-button>
+                            <el-button link v-else-if="scope.row.index == scope.row.size" size="small" type="primary"
+                                @click="download(scope.row)">下载</el-button>
                         </template>
                     </el-table-column>
                 </el-table>
@@ -79,14 +82,17 @@
                             <rect x="432" y="272" width="48" height="48" rx="8" ry="8" />
                             <rect x="272" y="432" width="48" height="48" rx="8" ry="8" />
                             <rect x="336" y="96" width="80" height="80" rx="8" ry="8" />
-                            <rect x="288" y="48" width="176" height="176" rx="16" ry="16" fill="none" stroke="currentColor"
-                                stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
+                            <rect x="288" y="48" width="176" height="176" rx="16" ry="16" fill="none"
+                                stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                stroke-width="32" />
                             <rect x="96" y="96" width="80" height="80" rx="8" ry="8" />
-                            <rect x="48" y="48" width="176" height="176" rx="16" ry="16" fill="none" stroke="currentColor"
-                                stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
+                            <rect x="48" y="48" width="176" height="176" rx="16" ry="16" fill="none"
+                                stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                stroke-width="32" />
                             <rect x="96" y="336" width="80" height="80" rx="8" ry="8" />
-                            <rect x="48" y="288" width="176" height="176" rx="16" ry="16" fill="none" stroke="currentColor"
-                                stroke-linecap="round" stroke-linejoin="round" stroke-width="32" />
+                            <rect x="48" y="288" width="176" height="176" rx="16" ry="16" fill="none"
+                                stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                stroke-width="32" />
                         </svg>
                         二维码
                     </el-button>
@@ -279,6 +285,12 @@ function remove(uploadFile: UploadFile, uploadFiles: UploadFiles): Awaitable<boo
     fileUpload.delete(uploadFile.name)
     pullMetaData()
     return true
+}
+
+function move(row: FileMeta) {
+    AsyncFetch<string>(`${group}/move?md5=${row.md5}&name=${row.name}&key=${sharedKey.value}`, null).then(() => {
+        ElMessage.success(`文件转移到容器目录成功`)
+    })
 }
 
 function download(row: FileMeta) {

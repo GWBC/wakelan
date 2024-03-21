@@ -80,6 +80,7 @@ func (a *Web) SetFileAPI(r *gin.Engine) {
 	group.GET("/genkey", api.GenKey)
 	group.GET("/getMsg", api.GetMessage)
 	group.POST("/addMsg", api.AddMessage)
+	group.GET("/move", api.MoveToDockerBackupApi)
 }
 
 func (a *Web) SetDockerClientApi(r *gin.Engine) {
@@ -109,6 +110,10 @@ func (a *Web) SetDockerClientApi(r *gin.Engine) {
 	group.GET("/getPushImageLog", api.GetPushImageLog)
 	group.GET("/backupImage", api.BackupImage)
 	group.GET("/backupContainer", api.BackupContainer)
+	group.GET("/getBackupInfos", api.GetBackupInfos)
+	group.GET("/download", api.Download)
+	group.GET("/restore", api.Restore)
+	group.GET("/delete", api.DeleteBackup)
 }
 
 ///////////////////////////////////////////////////////////////////

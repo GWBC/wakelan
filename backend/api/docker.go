@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -132,6 +133,13 @@ type DockerClient struct {
 	pushLog  PullLogInfo
 }
 
+type BackupInfos struct {
+	Name       string `json:"name"`
+	Size       int64  `json:"size"`
+	Type       string `json:"type"`
+	ModifyTime string `json:"modify_time"`
+}
+
 func (d *DockerClient) Init() error {
 	d.cli = &comm.DockerClient{}
 	d.pullLog = PullLogInfo{}
@@ -186,6 +194,160 @@ func (d *DockerClient) loadConfig() *db.GlobalInfo {
 	}
 
 	return cfg
+}
+
+// 下载文件
+func (d *DockerClient) Download(c *gin.Context) {
+	cfg := d.loadConfig()
+	imageBackupPath := path.Join(cfg.ContainerRootPath, "image-backup")
+	containerBackupPath := path.Join(cfg.ContainerRootPath, "container-backup")
+
+	t := c.Query("type")
+
+	if t == "image" {
+		Download(imageBackupPath, c)
+	} else {
+		Download(containerBackupPath, c)
+	}
+}
+
+// 恢复镜像
+func (d *DockerClient) Restore(c *gin.Context) {
+	d.loadConfig()
+
+	cfg := db.DBOperObj().GetConfig()
+	imageBackupPath := path.Join(cfg.ContainerRootPath, "image-backup")
+	containerBackupPath := path.Join(cfg.ContainerRootPath, "container-backup")
+
+	name := c.Query("name")
+	if len(name) == 0 {
+		c.JSON(200, gin.H{
+			"err": "备份文件名称不能为空",
+		})
+
+		return
+	}
+
+	t := c.Query("type")
+
+	var err error
+	if t == "image" {
+		err = d.cli.LoadImage(filepath.Join(imageBackupPath, name))
+
+	} else {
+		ref := strings.Split(name, ".")[0]
+		err = d.cli.ImportImage(filepath.Join(containerBackupPath, name), ref)
+	}
+
+	if err != nil {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err": "",
+	})
+}
+
+// 删除备份
+func (d *DockerClient) DeleteBackup(c *gin.Context) {
+	d.loadConfig()
+
+	cfg := db.DBOperObj().GetConfig()
+	imageBackupPath := path.Join(cfg.ContainerRootPath, "image-backup")
+	containerBackupPath := path.Join(cfg.ContainerRootPath, "container-backup")
+
+	name := c.Query("name")
+	if len(name) == 0 {
+		c.JSON(200, gin.H{
+			"err": "文件名不能为空",
+		})
+
+		return
+	}
+
+	t := c.Query("type")
+
+	var err error
+	if t == "image" {
+		err = os.Remove(filepath.Join(imageBackupPath, name))
+
+	} else {
+		err = os.Remove(filepath.Join(containerBackupPath, name))
+	}
+
+	if err != nil && !os.IsNotExist(err) {
+		c.JSON(200, gin.H{
+			"err": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"err": "",
+	})
+}
+
+// 获取备份信息
+func (d *DockerClient) GetBackupInfos(c *gin.Context) {
+	cfg := d.loadConfig()
+	imageBackupPath := path.Join(cfg.ContainerRootPath, "image-backup")
+	containerBackupPath := path.Join(cfg.ContainerRootPath, "container-backup")
+
+	infos1 := []BackupInfos{}
+	filepath.Walk(imageBackupPath, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
+		data := BackupInfos{
+			Name:       info.Name(),
+			Type:       "image",
+			Size:       info.Size(),
+			ModifyTime: info.ModTime().Format("2006-01-02 15:04:05"),
+		}
+
+		infos1 = append(infos1, data)
+		return nil
+	})
+
+	sort.Slice(infos1, func(i, j int) bool {
+		return infos1[i].ModifyTime > infos1[j].ModifyTime
+	})
+
+	infos2 := []BackupInfos{}
+	filepath.Walk(containerBackupPath, func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
+		data := BackupInfos{
+			Name:       info.Name(),
+			Type:       "container",
+			Size:       info.Size(),
+			ModifyTime: info.ModTime().Format("2006-01-02 15:04:05"),
+		}
+
+		infos2 = append(infos2, data)
+		return nil
+	})
+
+	sort.Slice(infos2, func(i, j int) bool {
+		return infos2[i].ModifyTime > infos2[j].ModifyTime
+	})
+
+	infos := []BackupInfos{}
+	infos = append(infos, infos1...)
+	infos = append(infos, infos2...)
+
+	c.JSON(200, gin.H{
+		"err":   "",
+		"infos": infos,
+	})
 }
 
 // 推送镜像

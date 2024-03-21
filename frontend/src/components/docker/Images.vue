@@ -437,7 +437,7 @@ function onBackup(row: ImageInfo) {
     AsyncFetch<void>(`${props.group}backupImage?name=${image}`, null).then((infos) => {
         dataLoding.value = false
         ElMessage.success(`备份镜像 ${image} 成功`)
-    }).catch((err) =>{
+    }).catch((err) => {
         dataLoding.value = false
     })
 }
@@ -659,7 +659,12 @@ function onDel(row: ImageInfo) {
         dataLoding.value = true
         AsyncFetch(`${props.group}delImage?id=${imageName}`, null).then(() => {
             ElMessage.success(`删除镜像 ${imageName} 成功`)
-            imageDatas.value = imageDatas.value.filter(item => `${item.repostitory}:${item.tag}` != imageName)
+            if (imageName.indexOf(":") < 0) {
+                imageDatas.value = imageDatas.value.filter(item => item.id != imageName)
+            } else {
+                imageDatas.value = imageDatas.value.filter(item => `${item.repostitory}:${item.tag}` != imageName)
+            }
+
             dataLoding.value = false
         }).catch(err => {
             dataLoding.value = false
@@ -693,7 +698,7 @@ function onRun(row: ImageInfo) {
                 pubPort = "8080"
             } else if (pubPort == "443") {
                 pubPort = "8443"
-            }else if(parseInt(pubPort) > 20 && parseInt(pubPort) < 30){
+            } else if (parseInt(pubPort) > 20 && parseInt(pubPort) < 30) {
                 pubPort = "22" + pubPort
             }
 

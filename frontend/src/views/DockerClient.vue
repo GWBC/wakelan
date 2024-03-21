@@ -14,7 +14,7 @@
         <el-tab-pane class="h-full" name="network" label="网络">
           <Networks v-if="cur_select == 'network'" :group="group" />
         </el-tab-pane>
-        <el-tab-pane class="h-full" name="import" label="导入">
+        <el-tab-pane class="h-full" name="import" label="恢复">
           <Import v-if="cur_select == 'import'" :group="group" />
         </el-tab-pane>
       </el-tabs>

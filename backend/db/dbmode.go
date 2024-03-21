@@ -18,8 +18,8 @@ import (
 )
 
 type MacInfo struct {
-	IP         string     `gorm:"column:ip;primary_key" json:"ip"`
 	Mac        string     `gorm:"column:mac;primary_key" json:"mac"`
+	IP         string     `gorm:"column:ip" json:"ip"`
 	MANUF      string     `gorm:"column:manuf" json:"manuf"`
 	AttachInfo AttachInfo `gorm:"foreignkey:mac;references:mac" json:"attach_info"`
 }

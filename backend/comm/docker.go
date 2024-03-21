@@ -367,7 +367,7 @@ func (d *DockerClient) LoadImage(fileName string) error {
 		return err
 	}
 
-	r, err := cli.ImageLoad(context.Background(), gzReader, true)
+	r, err := cli.ImageLoad(context.Background(), gzReader, false)
 	if err != nil {
 		return err
 	}
@@ -417,7 +417,7 @@ func (d *DockerClient) ExportContainer(name string, fileName string) (string, er
 }
 
 // 导入容器
-func (d *DockerClient) ImportImage(fileName string) error {
+func (d *DockerClient) ImportImage(fileName string, ref string) error {
 	cli, err := d.conn()
 	if err != nil {
 		return err
@@ -438,7 +438,7 @@ func (d *DockerClient) ImportImage(fileName string) error {
 	r, err := cli.ImageImport(context.Background(), types.ImageImportSource{
 		Source:     gzReader,
 		SourceName: "-",
-	}, "", types.ImageImportOptions{})
+	}, ref, types.ImageImportOptions{})
 	if err != nil {
 		return err
 	}
