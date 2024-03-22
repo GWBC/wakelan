@@ -1,12 +1,12 @@
 <template>
     <el-tabs v-model="actionName" class="file-tabs navigation flex flex-col" type="border-card">
         <el-tab-pane class="h-full flex flex-col" label="文件中转" name="文件中转">
-            <el-card class="flex-[5] mb-2">
-                <el-upload ref="uploadObj" :show-file-list=true drag action="/api/file/upload" :http-request="upload"
-                    :before-remove="remove" multiple>
+            <el-card class="flex-[5] mb-2" body-class="!h-full">
+                <el-upload class="!h-full" ref="uploadObj" :show-file-list=true drag action="/api/file/upload"
+                    :http-request="upload" :before-remove="remove" multiple>
                     <el-icon class="el-icon--upload"><upload-filled /></el-icon>
                     <div class="el-upload__text">
-                        上传[<span class="text-green-500">文件</span>/<span class="text-red-500">Docker备份</span>]文件
+                        支持[<span class="font-bold text-fuchsia-600">普通/Docker备份</span>]文件上传
                         <em>点击上传</em>
                     </div>
                 </el-upload>
