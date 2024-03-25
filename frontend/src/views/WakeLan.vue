@@ -21,7 +21,7 @@
       </el-col>
     </el-row>
   </el-dialog>
-  <MainPage>
+  <MainPage :headerShow="true">
     <template #header>
       <el-row :gutter="5">
         <el-col :xs="5" :sm="6" :md="3">

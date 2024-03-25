@@ -35,7 +35,7 @@ interface LogSizeInfo {
 }
 
 const total = ref(0)
-const pageSizes = ref([18, 20, 40, 60, 80, 100])
+const pageSizes = ref([20, 40, 60, 80, 100])
 const pageSize = ref(pageSizes.value[0])
 
 const table_loading = ref(false)
