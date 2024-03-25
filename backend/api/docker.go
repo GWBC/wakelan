@@ -303,7 +303,7 @@ func (d *DockerClient) GetBackupInfos(c *gin.Context) {
 		if err != nil {
 			return err
 		}
-		
+
 		if info.IsDir() {
 			return nil
 		}
