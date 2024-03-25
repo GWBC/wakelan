@@ -300,7 +300,10 @@ func (d *DockerClient) GetBackupInfos(c *gin.Context) {
 
 	infos1 := []BackupInfos{}
 	filepath.Walk(imageBackupPath, func(path string, info os.FileInfo, err error) error {
-
+		if err != nil {
+			return err
+		}
+		
 		if info.IsDir() {
 			return nil
 		}
