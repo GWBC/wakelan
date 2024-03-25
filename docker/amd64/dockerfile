@@ -86,7 +86,7 @@ ENV LD_LIBRARY_PATH=${ROOT_DIR}/guacd_bin:${ROOT_DIR}/wakelan
 ENV LANG=zh_CN.UTF-8
 ENV LANGUAGE=zh_CN:zh:en_US:en
 
-VOLUME [ "${ROOT_DIR}/wakelan/data" ]
+VOLUME [ "${ROOT_DIR}/wakelan/data", "/opt/container-root" ]
 EXPOSE ${WAKE_PORT} ${GUACD_PORT}
 
 CMD ["/bin/bash", "-c", "${ROOT_DIR}/run ${GUACD_PORT} ${WAKE_PORT}"]
